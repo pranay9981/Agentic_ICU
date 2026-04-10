@@ -1,0 +1,50 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# ── Test / lint caches ────────────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+
+# ── Raw patient data (40k PSV files — large and patient-private) ──────────────
+data/raw/
+data/processed/
+
+# ── Large training array exports (numpy splits, 100MB–500MB each) ────────────
+artifacts/*.npy
+
+# ── Large tabular training splits (parquet files, up to 85MB each) ───────────
+artifacts/*.parquet
+
+# ── Patient manifest CSV ──────────────────────────────────────────────────────
+artifacts/patient_manifest.csv
+
+# ── Jupyter / notebook checkpoints ───────────────────────────────────────────
+.ipynb_checkpoints/
+notebooks/
+
+# ── Generated reports (created at runtime) ────────────────────────────────────
+reports/

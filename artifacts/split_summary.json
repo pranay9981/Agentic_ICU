@@ -1,0 +1,17 @@
+{
+  "train": {
+    "patients": 28225,
+    "positive_patients": 2051,
+    "positive_patient_rate": 0.07266607617360496
+  },
+  "val": {
+    "patients": 6049,
+    "positive_patients": 440,
+    "positive_patient_rate": 0.07273929575136386
+  },
+  "test": {
+    "patients": 6049,
+    "positive_patients": 440,
+    "positive_patient_rate": 0.07273929575136386
+  }
+}

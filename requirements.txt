@@ -1,0 +1,19 @@
+# Core API
+fastapi==0.135.1
+uvicorn[standard]==0.41.0
+starlette==0.52.1
+pydantic==2.12.5
+python-multipart==0.0.22
+watchfiles==1.1.1
+
+# Data / ML
+numpy==2.4.2
+pandas==3.0.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+shap==0.51.0
+
+# Deep learning — install the CUDA build manually if you have a GPU:
+#   pip install torch==2.10.0+cu130 --index-url https://download.pytorch.org/whl/cu130
+# CPU-only fallback (slower inference):
+torch==2.10.0

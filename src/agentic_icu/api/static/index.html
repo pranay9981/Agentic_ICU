@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic-ICU Central Monitor</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<!-- ── Top bar ───────────────────────────────────────────────────────────── -->
+<header class="top-bar">
+  <div class="tb-left">
+    <svg class="brand-ecg" viewBox="0 0 56 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+      <polyline points="0,10 10,10 13,3 17,17 21,10 25,10 27,7 29,13 31,10 56,10"/>
+    </svg>
+    <span class="brand-name">Agentic-ICU</span>
+    <span class="brand-divider"></span>
+    <span class="brand-sub">Central Monitoring Station</span>
+  </div>
+
+  <div class="tb-center">
+    <div class="summary-chips" id="summary-chips">
+      <div class="sc-chip critical"><span id="count-critical">0</span> Critical</div>
+      <div class="sc-chip watch">   <span id="count-watch">0</span> Watch</div>
+      <div class="sc-chip stable">  <span id="count-stable">0</span> Stable</div>
+      <div class="sc-chip total">   <span id="count-total">0</span> Patients</div>
+    </div>
+  </div>
+
+  <div class="tb-right">
+    <div id="alert-counter-chip" class="alert-chip hidden">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a6 6 0 100 12A6 6 0 008 0zm0 2.5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 018 2.5zM7 10a1 1 0 112 0 1 1 0 01-2 0z"/></svg>
+      <span id="alert-counter">0</span> alerts
+    </div>
+    <div id="clock" class="tb-clock">--:--:--</div>
+    <div id="health-badge" class="health-pill">Checking</div>
+    <!-- hidden compat chips -->
+    <span id="monitor-bed" style="display:none">--</span>
+    <span id="monitor-alert" style="display:none">Standby</span>
+    <span id="result-patient" style="display:none"></span>
+  </div>
+</header>
+
+<!-- ── Workspace ─────────────────────────────────────────────────────────── -->
+<div class="icu-workspace" id="icu-workspace">
+
+  <!-- ── Patient grid ────────────────────────────────────────────────────── -->
+  <div class="grid-panel" id="grid-panel">
+
+    <!-- Toolbar -->
+    <div class="grid-toolbar">
+      <h2 class="gt-title">Board Controls</h2>
+      <div class="gt-actions">
+        <input id="patient-id" class="gt-input" type="text" placeholder="Patient ID…" autocomplete="off">
+        <button id="load-demo" class="gt-btn" type="button">Add</button>
+        <button id="reset-board-btn" class="gt-btn-reset" type="button" title="Reset to default 8 patients">↺ Reset</button>
+        <button id="model-metrics-btn" class="gt-btn-metrics" type="button">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 11a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 01-1 1H2a1 1 0 01-1-1v-3zm5-4a1 1 0 011-1h2a1 1 0 011 1v7a1 1 0 01-1 1H7a1 1 0 01-1-1V7zm5-5a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V2z"/></svg>
+          Model Metrics
+        </button>
+        <button id="browse-patients-btn" class="gt-btn-browse" type="button">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.099zm-5.242 1.656a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"/></svg>
+          Browse Patients
+        </button>
+        <select id="grid-cols" class="gt-select">
+          <option value="3">3 columns</option>
+          <option value="4" selected>4 columns</option>
+          <option value="5">5 columns</option>
+        </select>
+      </div>
+      <div id="grid-status" class="gt-status">Loading patients…</div>
+    </div>
+
+    <!-- Patient monitor cards -->
+    <div class="monitor-grid" id="monitor-grid">
+      <div class="grid-loading">
+        <div class="spinner-lg"></div>
+        <span>Initialising patient monitors…</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Detail sidebar ──────────────────────────────────────────────────── -->
+  <aside class="detail-sidebar hidden" id="detail-sidebar">
+    <div class="ds-header">
+      <div class="ds-patient-info">
+        <span class="ds-label">Patient</span>
+        <h2 id="detail-patient-id" class="ds-patient-id">--</h2>
+        <span id="patient-last-eval" class="ds-meta">--</span>
+      </div>
+      <div class="ds-actions">
+        <button id="step-back"    class="btn-icon" title="Step back"    type="button">◂</button>
+        <button id="step-forward" class="btn-icon" title="Step forward" type="button">▸</button>
+        <button id="toggle-playback" class="btn-sm-primary" type="button">Re-evaluate</button>
+        <button id="run-timeline"    class="btn-sm-ghost"   type="button">Timeline</button>
+        <button id="close-sidebar"   class="btn-close"      type="button" title="Close">✕</button>
+      </div>
+    </div>
+
+    <div class="ds-body">
+
+      <!-- Clinical decision -->
+      <div id="decision-card" class="clin-card muted">
+        <div class="clin-bar"></div>
+        <div class="clin-body">
+          <span class="clin-eyebrow">Clinical Decision</span>
+          <div class="clin-title-row">
+            <h3 id="decision-title" class="clin-title">Awaiting evaluation</h3>
+            <div class="clin-chips">
+              <span class="chip chip-engine">Decision Engine</span>
+              <span id="monitor-signal" class="chip chip-signal">Signal</span>
+            </div>
+          </div>
+          <p id="decision-rationale" class="clin-rationale">Recommendation notes will appear here.</p>
+          <div id="suggested-actions" class="clin-actions hidden">
+            <p class="clin-actions-label">Suggested Actions</p>
+            <ul id="actions-list" class="actions-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline analysis -->
+      <div class="ds-section hidden" id="timeline-section">
+        <div class="dss-head">
+          <span class="dss-title">Risk Timeline</span>
+          <span id="timeline-status" class="dss-badge">per frame</span>
+        </div>
+        <div class="timeline-wrap">
+          <div class="tl-y-labels"><span>1.0</span><span>0.8</span><span>0.55</span><span>0.0</span></div>
+          <svg id="risk-timeline-svg" class="tl-svg" viewBox="0 0 800 160" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="tl-legend">
+          <span class="tl-leg teal">■ Sepsis GRU</span>
+          <span class="tl-leg violet">■ Resp GRU</span>
+          <span class="tl-leg amber">— 0.8 high</span>
+          <span class="tl-leg red-d">— 0.88 extreme</span>
+        </div>
+        <div id="timeline-progress" class="tl-progress hidden">
+          <div class="tp-wrap"><div id="tp-bar" class="tp-fill"></div></div>
+          <span id="tp-label">Evaluating…</span>
+        </div>
+      </div>
+
+      <!-- Vital sign charts -->
+      <div class="ds-section">
+        <div class="dss-head"><span class="dss-title">Vital Signs</span><span id="vitals-window-label" class="dss-badge">24h window</span></div>
+        <div class="vitals-nums">
+          <div class="vn hr-c">  <span>HR</span>   <strong id="monitor-hr">--</strong>   <small>bpm</small></div>
+          <div class="vn sp-c">  <span>SpO₂</span> <strong id="monitor-spo2">--</strong> <small>%</small></div>
+          <div class="vn rp-c">  <span>Resp</span>  <strong id="monitor-resp">--</strong> <small>bpm</small></div>
+          <div class="vn mp-c">  <span>MAP</span>   <strong id="monitor-map">--</strong>  <small>mmHg</small></div>
+          <div class="vn tp-c">  <span>Temp</span>  <strong id="monitor-temp">--</strong> <small>°C</small></div>
+          <div class="vn sb-c">  <span>SBP</span>   <strong id="monitor-sbp">--</strong>  <small>mmHg</small></div>
+        </div>
+        <div class="trend-grid-2">
+          <div class="tc"><span class="tl">HR <em id="trend-hr-selected-meta"></em></span>
+            <svg id="hr-trend-selected"   class="ts" viewBox="0 0 320 60" preserveAspectRatio="none"></svg></div>
+          <div class="tc"><span class="tl">SpO₂ <em id="trend-spo2-selected-meta"></em></span>
+            <svg id="spo2-trend-selected" class="ts" viewBox="0 0 320 60" preserveAspectRatio="none"></svg></div>
+          <div class="tc"><span class="tl">Resp <em id="trend-resp-selected-meta"></em></span>
+            <svg id="resp-trend-selected" class="ts" viewBox="0 0 320 60" preserveAspectRatio="none"></svg></div>
+          <div class="tc"><span class="tl">MAP <em id="trend-map-meta"></em></span>
+            <svg id="map-trend"           class="ts" viewBox="0 0 320 60" preserveAspectRatio="none"></svg></div>
+          <div class="tc"><span class="tl">Temp <em id="trend-temp-meta"></em></span>
+            <svg id="temp-trend"          class="ts" viewBox="0 0 320 60" preserveAspectRatio="none"></svg></div>
+          <div class="tc"><span class="tl">Lactate <em id="trend-lactate-meta"></em></span>
+            <svg id="lactate-trend"       class="ts" viewBox="0 0 320 60" preserveAspectRatio="none"></svg></div>
+        </div>
+      </div>
+
+      <!-- Alert drivers -->
+      <div class="ds-section">
+        <div class="dss-head"><span class="dss-title">Alert Drivers</span></div>
+        <div class="drivers-2col">
+          <div>
+            <p class="drv-lbl">Lab Signal · SHAP</p>
+            <div id="lab-drivers"><p class="empty-msg">Awaiting evaluation</p></div>
+          </div>
+          <div>
+            <p class="drv-lbl">Vitals · Temporal Attention</p>
+            <div id="vitals-saliency"><p class="empty-msg">Awaiting evaluation</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent scores -->
+      <div class="ds-section">
+        <div class="dss-head"><span class="dss-title">Agent Scores · Threshold Ratio</span></div>
+        <div class="agents-col">
+
+          <div class="at sepsis-at">
+            <div class="at-row1">
+              <div><span class="at-type">Sepsis GRU</span><span id="vitals-band" class="at-band muted">--</span></div>
+              <span id="vitals-score" class="at-val teal-v">--</span>
+            </div>
+            <div class="at-bar-wrap"><div id="vitals-meter" class="at-bar teal-b"></div></div>
+            <div class="at-bar-wrap dim"><div id="vitals-trace" class="at-bar teal-b"></div></div>
+            <div class="at-meta-row">
+              <span>Threshold <strong id="vitals-threshold">--</strong></span>
+              <span>Ratio <strong id="vitals-ratio">--</strong></span>
+            </div>
+            <p id="vitals-detail" class="at-detail">Sequence model output will appear here.</p>
+          </div>
+
+          <div class="at lab-at">
+            <div class="at-row1">
+              <div><span class="at-type">Lab XGBoost</span><span id="lab-band" class="at-band muted">--</span></div>
+              <span id="lab-score" class="at-val amber-v">--</span>
+            </div>
+            <div class="at-bar-wrap"><div id="lab-meter" class="at-bar amber-b"></div></div>
+            <div class="at-bar-wrap dim"><div id="lab-trace" class="at-bar amber-b"></div></div>
+            <div class="at-meta-row">
+              <span>Threshold <strong id="lab-threshold">--</strong></span>
+              <span>Ratio <strong id="lab-ratio">--</strong></span>
+            </div>
+            <p id="lab-detail" class="at-detail">Tabular model output will appear here.</p>
+          </div>
+
+          <div class="at resp-at">
+            <div class="at-row1">
+              <div><span class="at-type">Resp GRU</span><span id="resp-band" class="at-band muted">--</span></div>
+              <span id="resp-score" class="at-val violet-v">--</span>
+            </div>
+            <div class="at-bar-wrap"><div id="resp-meter" class="at-bar violet-b"></div></div>
+            <div class="at-bar-wrap dim"><div id="resp-trace" class="at-bar violet-b"></div></div>
+            <div class="at-meta-row">
+              <span>Threshold <strong id="resp-threshold">--</strong></span>
+              <span>Ratio <strong id="resp-ratio">--</strong></span>
+            </div>
+            <p id="resp-detail" class="at-detail">Respiratory model output will appear here.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Signal quality + audit -->
+      <details class="ds-accordion">
+        <summary class="da-head">Signal Quality &amp; Audit Trail</summary>
+        <div class="da-body">
+          <div class="sq-2col">
+            <div>
+              <h5 class="sq-title">Signal Quality</h5>
+              <div class="sq-grid">
+                <span>Valid</span>      <strong id="signal-valid">--</strong>
+                <span>Artifact</span>   <strong id="artifact-type">--</strong>
+                <span>Confidence</span> <strong id="artifact-confidence">--</strong>
+                <span>Suppression</span><strong id="suppression">--</strong>
+                <span>Mode</span>       <strong id="monitor-suppression">--</strong>
+              </div>
+              <div id="signal-callout" class="sq-callout">Signal validation will appear after evaluation.</div>
+            </div>
+            <div>
+              <h5 class="sq-title">Reasoning Trail</h5>
+              <ol id="reasoning-log" class="reasoning-list">
+                <li class="empty-msg">No reasoning trace yet.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- System health -->
+      <details class="ds-accordion">
+        <summary class="da-head">System Health &amp; Calibration</summary>
+        <div class="da-body">
+          <div class="sq-2col">
+            <div>
+              <h5 class="sq-title">Runtime Health</h5>
+              <div id="health-grid" class="health-list"></div>
+              <div id="policy-summary" class="policy-block">
+                <p class="empty-msg">Runtime policy details will appear here.</p>
+              </div>
+            </div>
+            <div>
+              <h5 class="sq-title">Calibration Review</h5>
+              <p id="report-name" class="rpt-name">No report</p>
+              <div id="report-summary" class="rpt-block"></div>
+              <div id="report-explainer" class="rpt-block">
+                <p class="empty-msg">Recommendation notes will appear here.</p>
+              </div>
+            </div>
+          </div>
+          <button id="refresh-health" class="btn-sm-ghost" style="margin-top:10px" type="button">Refresh Runtime</button>
+        </div>
+      </details>
+
+      <!-- Alert history -->
+      <details class="ds-accordion">
+        <summary class="da-head">Alert History</summary>
+        <div class="da-body">
+          <div class="ah-bar">
+            <span class="empty-msg">Session alerts (localStorage)</span>
+            <button id="clear-alert-history" class="btn-xs" type="button">Clear</button>
+          </div>
+          <ol id="alert-history-log" class="ah-list">
+            <li class="empty-msg">No alerts yet.</li>
+          </ol>
+        </div>
+      </details>
+
+    </div><!-- /ds-body -->
+  </aside>
+
+</div><!-- /icu-workspace -->
+
+<!-- Hidden compat elements -->
+<div aria-hidden="true" style="display:none">
+  <select id="playback-speed"><option value="1200" selected>Normal</option></select>
+  <span id="playback-status">Standby</span>
+  <span id="playback-position">--</span>
+  <select id="station-patient-count"><option value="4" selected>4 beds</option></select>
+  <div id="station-patient-selectors"></div>
+  <div id="demo-patient-grid"></div>
+  <div id="station-grid"></div>
+  <textarea id="payload"></textarea>
+  <button id="run-eval" type="button">Evaluate</button>
+</div>
+
+<!-- Patient selection modal -->
+<div id="patient-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+  <div class="patient-modal" role="dialog" aria-label="Select Patient">
+    <div class="pm-header">
+      <div class="pm-title-row">
+        <h2 class="pm-title" id="pm-title">Browse Patients</h2>
+        <button id="pm-close" class="pm-close-btn" type="button" title="Close">✕</button>
+      </div>
+      <div class="pm-search-wrap">
+        <svg class="pm-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.099zm-5.242 1.656a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"/></svg>
+        <input id="pm-search" class="pm-search" type="text" placeholder="Search patient ID…" autocomplete="off" spellcheck="false">
+        <span id="pm-count" class="pm-count"></span>
+      </div>
+      <div class="pm-filter-row">
+        <button class="pm-filter active" data-filter="all"  type="button">All</button>
+        <button class="pm-filter" data-filter="high"   type="button">Critical</button>
+        <button class="pm-filter" data-filter="medium" type="button">Watch</button>
+        <button class="pm-filter" data-filter="low"    type="button">Stable</button>
+        <button class="pm-filter" data-filter="new"    type="button">Not on board</button>
+      </div>
+    </div>
+    <div id="pm-list" class="pm-list">
+      <div class="pm-loading">
+        <div class="spinner-lg"></div>
+        <span>Loading patients…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Model Metrics Modal -->
+<div id="metrics-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+  <div class="metrics-modal" role="dialog" aria-label="Model Performance">
+    <div class="mm-header">
+      <div class="mm-title-row">
+        <div class="mm-title-group">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="color:#a78bfa"><path d="M1 11a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 01-1 1H2a1 1 0 01-1-1v-3zm5-4a1 1 0 011-1h2a1 1 0 011 1v7a1 1 0 01-1 1H7a1 1 0 01-1-1V7zm5-5a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V2z"/></svg>
+          <h2 class="mm-title">Model Performance</h2>
+        </div>
+        <button id="mm-close" class="pm-close-btn" type="button" title="Close">✕</button>
+      </div>
+      <div class="mm-tabs" role="tablist">
+        <button class="mm-tab active" data-tab="overview"   role="tab">Overview</button>
+        <button class="mm-tab"        data-tab="sepsis_gru" role="tab">Sepsis GRU</button>
+        <button class="mm-tab"        data-tab="sepsis_xgb" role="tab">Sepsis XGBoost</button>
+        <button class="mm-tab"        data-tab="resp_gru"   role="tab">Resp GRU</button>
+        <button class="mm-tab"        data-tab="resp_xgb"   role="tab">Resp XGBoost</button>
+      </div>
+    </div>
+    <div id="mm-body" class="mm-body">
+      <div class="pm-loading"><div class="spinner-lg"></div><span>Loading metrics…</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

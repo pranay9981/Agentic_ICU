@@ -1,0 +1,32 @@
+{
+  "conservative": {
+    "high_alert_max_score_threshold": null,
+    "high_alert_mean_score_threshold": null,
+    "high_alert_extreme_sequence_score_threshold": 0.89,
+    "high_alert_supported_sequence_score_threshold": 0.82,
+    "high_alert_tabular_support_score_threshold": 0.30,
+    "medium_alert_max_score_threshold": null,
+    "medium_alert_sequence_score_threshold": 0.6,
+    "medium_alert_tabular_score_threshold": 0.5
+  },
+  "balanced": {
+    "high_alert_max_score_threshold": null,
+    "high_alert_mean_score_threshold": null,
+    "high_alert_extreme_sequence_score_threshold": 0.88,
+    "high_alert_supported_sequence_score_threshold": 0.8,
+    "high_alert_tabular_support_score_threshold": 0.25,
+    "medium_alert_max_score_threshold": null,
+    "medium_alert_sequence_score_threshold": 0.55,
+    "medium_alert_tabular_score_threshold": 0.4
+  },
+  "screening": {
+    "high_alert_max_score_threshold": null,
+    "high_alert_mean_score_threshold": null,
+    "high_alert_extreme_sequence_score_threshold": 0.88,
+    "high_alert_supported_sequence_score_threshold": 0.8,
+    "high_alert_tabular_support_score_threshold": 0.20,
+    "medium_alert_max_score_threshold": null,
+    "medium_alert_sequence_score_threshold": 0.5,
+    "medium_alert_tabular_score_threshold": 0.35
+  }
+}

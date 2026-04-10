@@ -1,0 +1,29 @@
+{
+  "train": {
+    "split": "train",
+    "shape": [
+      28225,
+      72,
+      68
+    ],
+    "positive_rate": 0.14476527273654938
+  },
+  "val": {
+    "split": "val",
+    "shape": [
+      6049,
+      72,
+      68
+    ],
+    "positive_rate": 0.13985782861709595
+  },
+  "test": {
+    "split": "test",
+    "shape": [
+      6049,
+      72,
+      68
+    ],
+    "positive_rate": 0.1463051736354828
+  }
+}
