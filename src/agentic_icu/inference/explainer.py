@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 import pandas as pd
@@ -104,13 +105,16 @@ class TabularExplainer:
     def __init__(self, inference: "XGBoostInference") -> None:
         self._inference = inference
         self._explainer: Optional[shap.TreeExplainer] = None
+        self._lock = threading.Lock()
 
     def _ensure_loaded(self) -> None:
         if self._explainer is not None:
             return
-        if self._inference._model is None:
-            self._inference.load()
-        self._explainer = shap.TreeExplainer(self._inference._model)
+        with self._lock:
+            if self._explainer is not None:  # re-check after acquiring lock
+                return
+            self._inference.load()  # idempotent
+            self._explainer = shap.TreeExplainer(self._inference.model)
 
     def top_contributions(
         self,

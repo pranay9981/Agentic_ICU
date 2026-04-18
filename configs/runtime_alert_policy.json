@@ -21,5 +21,9 @@
   "models_unavailable_rationale": "No trained runtime artifacts are loaded yet, so no predictive alert is issued.",
   "high_alert_rationale": "At least one specialized agent reports high deterioration risk on validated signals.",
   "medium_alert_rationale": "Predictive risk is elevated and should be monitored closely.",
-  "stable_rationale": "Available agent scores remain below the current alert thresholds."
+  "stable_rationale": "Available agent scores remain below the current alert thresholds.",
+  "resp_high_alert_threshold": 0.8,
+  "resp_medium_alert_threshold": 0.55,
+  "resp_high_alert_type": "Respiratory Failure Risk",
+  "partial_suppression_factor": 0.7
 }

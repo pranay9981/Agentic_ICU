@@ -2,14 +2,22 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import math
+import os
+import re
+import threading
 import time
+import uuid
+from collections import defaultdict, deque
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from agentic_icu.api.dependencies import get_workflow
 from agentic_icu.config import settings
@@ -18,22 +26,120 @@ from agentic_icu.domain.contracts import (
     EvaluatePatientRequest,
     EvaluatePatientResponse,
     ExplainPatientResponse,
+    MAX_WINDOW_ROWS,
 )
 
+logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+# Optional API key auth. Set AGENTIC_ICU_API_KEY env var to enable.
+_API_KEY: str = os.environ.get("AGENTIC_ICU_API_KEY", "").strip()
+_AUTH_EXEMPT: set[str] = {"/", "/health", "/favicon.ico"}
+
+
+class _ApiKeyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if _API_KEY:
+            path = request.url.path
+            if path not in _AUTH_EXEMPT and not path.startswith("/static/"):
+                if request.headers.get("X-API-Key", "") != _API_KEY:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"error": "unauthorized", "detail": "Valid X-API-Key header required."},
+                    )
+        return await call_next(request)
+
+
+class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    _HEADERS = {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "geolocation=(), camera=(), microphone=()",
+        "Content-Security-Policy": (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "object-src 'none'; "
+            "frame-ancestors 'none'"
+        ),
+    }
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        for k, v in self._HEADERS.items():
+            response.headers.setdefault(k, v)
+        return response
+
+
+# Model quality floors — warn at startup if a model falls below these.
+_MODEL_AUC_FLOOR = 0.70
+_MODEL_AP_FLOOR  = 0.05
+
+# Patient ID list cached at startup — avoids re-scanning 40k files on every search.
+# Rebuilt once when the lifespan starts; stale if files are added/removed at runtime.
+_patient_ids: list[str] = []
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Pre-warm models and cache the patient ID list at startup."""
+    global _patient_ids
+    workflow = get_workflow()
+    try:
+        workflow.vitals_agent.predictor.load()
+        workflow.lab_agent.predictor.load()
+        if workflow.resp_failure_agent is not None:
+            workflow.resp_failure_agent.gru_predictor.load()
+        logger.info("Model warm-up complete.")
+    except Exception as exc:
+        logger.warning(
+            "Model warm-up failed (%s: %s) — models will load lazily on first request.",
+            type(exc).__name__, exc,
+        )
+    try:
+        _patient_ids = sorted(p.stem for p in Path(settings.raw_data_dir).glob("*.psv"))
+        logger.info("Patient ID cache built: %d patients.", len(_patient_ids))
+    except Exception as exc:
+        logger.warning("Patient ID cache build failed (%s: %s).", type(exc).__name__, exc)
+
+    # Model quality gate — warn at startup if any model is below minimum floors.
+    try:
+        checks = [
+            ("Sepsis GRU",     workflow.vitals_agent.predictor),
+            ("Sepsis XGBoost", workflow.lab_agent.predictor),
+        ]
+        if workflow.resp_failure_agent is not None:
+            checks.append(("Resp GRU", workflow.resp_failure_agent.gru_predictor))
+        for name, predictor in checks:
+            if predictor.available:
+                tm = predictor.metrics.get("test_metrics", {})
+                auc = tm.get("auc", 0.0)
+                ap  = tm.get("average_precision", 0.0)
+                if auc < _MODEL_AUC_FLOOR:
+                    logger.warning("Model quality gate: %s AUC=%.3f below floor %.2f", name, auc, _MODEL_AUC_FLOOR)
+                if ap < _MODEL_AP_FLOOR:
+                    logger.warning("Model quality gate: %s AP=%.4f below floor %.2f", name, ap, _MODEL_AP_FLOOR)
+    except Exception as exc:
+        logger.warning("Model quality gate check failed (%s: %s).", type(exc).__name__, exc)
+
+    yield
+
 
 app = FastAPI(
     title="Agentic-ICU Rebuild API",
     description="Clean runtime API and dashboard for the rebuilt multi-agent ICU workflow.",
+    lifespan=lifespan,
 )
+app.add_middleware(_SecurityHeadersMiddleware)
+app.add_middleware(_ApiKeyMiddleware)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 # ── Error handlers ────────────────────────────────────────────────────────────
 
 def _serializable_errors(errors: list) -> list:
-    """Convert Pydantic error dicts to JSON-safe plain dicts (ctx values may be exceptions)."""
+    """Convert Pydantic error dicts to JSON-safe plain dicts."""
     safe = []
     for err in errors:
         item = {k: (str(v) if not isinstance(v, (str, int, float, bool, list, dict, type(None))) else v)
@@ -60,15 +166,47 @@ async def http_error_handler(request: Request, exc: HTTPException) -> JSONRespon
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": "http_error", "detail": exc.detail},
+        headers=dict(exc.headers) if exc.headers else None,
     )
 
 
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = str(uuid.uuid4())[:8]
+    logger.exception("Unhandled error [request_id=%s] %s %s", request_id, request.method, request.url.path)
     return JSONResponse(
         status_code=500,
-        content={"error": "internal_error", "detail": str(exc)},
+        content={"error": "internal_error", "detail": "An unexpected error occurred.", "request_id": request_id},
     )
+
+
+_PATIENT_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+_RL_WINDOW_S: int = 60
+_RL_MAX_REQUESTS: int = 30
+_rl_lock = threading.Lock()
+_rl_counters: dict[str, deque] = defaultdict(deque)
+
+
+def _rate_limit(request: Request) -> None:
+    """FastAPI dependency: sliding-window rate limit per client IP per path."""
+    ip = (request.client.host if request.client else "unknown")
+    key = f"{ip}:{request.url.path}"
+    now = time.monotonic()
+    with _rl_lock:
+        q = _rl_counters[key]
+        while q and now - q[0] > _RL_WINDOW_S:
+            q.popleft()
+        if not q:
+            del _rl_counters[key]  # prune exhausted key; q still holds the deque
+        if len(q) >= _RL_MAX_REQUESTS:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded — max {_RL_MAX_REQUESTS} requests per {_RL_WINDOW_S}s.",
+                headers={"Retry-After": str(_RL_WINDOW_S)},
+            )
+        _rl_counters[key].append(now)  # defaultdict re-creates key if it was pruned
 
 
 def latest_alert_policy_report_path() -> Path:
@@ -88,41 +226,37 @@ def dashboard() -> FileResponse:
 def health() -> dict:
     workflow = get_workflow()
     preprocessing_ready = workflow.vitals_agent.preprocessor.available
-    xgboost_present = workflow.lab_agent.predictor.available
-    sequence_present = workflow.vitals_agent.predictor.available
-    xgboost_loaded = False
-    sequence_loaded = False
-    load_latency_ms: float | None = None
 
-    t0 = time.monotonic()
-    if preprocessing_ready and xgboost_present:
+    # Check loaded state without calling load() — avoids expensive disk I/O on
+    # every health ping.  Models are loaded lazily on first /evaluate request.
+    xgboost_ready = workflow.lab_agent.predictor.available
+    sequence_ready = workflow.vitals_agent.predictor.available
+    resp_ready = (
+        workflow.resp_failure_agent is not None
+        and workflow.resp_failure_agent.gru_predictor.available
+    )
+
+    # Measure actual load time only once (models self-cache after first load)
+    load_latency_ms: float | None = None
+    if preprocessing_ready:
+        t0 = time.monotonic()
         try:
             workflow.lab_agent.predictor.load()
-            xgboost_loaded = True
-        except Exception:
-            xgboost_loaded = False
-
-    if preprocessing_ready and sequence_present:
-        try:
             workflow.vitals_agent.predictor.load()
-            sequence_loaded = True
+            if workflow.resp_failure_agent is not None:
+                workflow.resp_failure_agent.gru_predictor.load()
         except Exception:
-            sequence_loaded = False
-    load_latency_ms = round((time.monotonic() - t0) * 1000, 1)
+            pass
+        load_latency_ms = round((time.monotonic() - t0) * 1000, 1)
 
-    # Count available patient files for a rough data-readiness signal
-    raw_dir = Path(settings.raw_data_dir)
-    patient_count: int | None = None
-    try:
-        patient_count = sum(1 for _ in raw_dir.glob("*.psv"))
-    except Exception:
-        pass
+    patient_count = len(_patient_ids) if _patient_ids else None
 
     return {
         "status": "ok",
         "preprocessing_ready": preprocessing_ready,
-        "xgboost_ready": xgboost_present and xgboost_loaded,
-        "sequence_ready": sequence_present and sequence_loaded,
+        "xgboost_ready": xgboost_ready,
+        "sequence_ready": sequence_ready,
+        "resp_ready": resp_ready,
         "load_latency_ms": load_latency_ms,
         "patient_count": patient_count,
         "host": settings.host,
@@ -173,9 +307,15 @@ def alert_policy_latest_report() -> dict:
 
 
 @app.get("/demo-patient/{patient_id}", response_model=EvaluatePatientRequest)
-def demo_patient(patient_id: str, max_rows: int = 24) -> EvaluatePatientRequest:
-    patient_path = Path(settings.raw_data_dir) / f"{patient_id}.psv"
-    if not patient_path.exists():
+def demo_patient(
+    patient_id: str,
+    max_rows: int = Query(default=24, ge=1, le=MAX_WINDOW_ROWS),
+) -> EvaluatePatientRequest:
+    if not _PATIENT_ID_RE.match(patient_id):
+        raise HTTPException(status_code=422, detail=f"Invalid patient ID format: {patient_id!r}")
+    raw_dir = Path(settings.raw_data_dir).resolve()
+    patient_path = (raw_dir / f"{patient_id}.psv").resolve()
+    if not patient_path.is_relative_to(raw_dir) or not patient_path.exists():
         raise HTTPException(status_code=404, detail=f"Demo patient not found: {patient_id}")
 
     rows = []
@@ -188,7 +328,10 @@ def demo_patient(patient_id: str, max_rows: int = 24) -> EvaluatePatientRequest:
             for key, value in row.items():
                 if key == "SepsisLabel" or value in (None, ""):
                     continue
-                numeric_value = float(value)
+                try:
+                    numeric_value = float(value)
+                except ValueError:
+                    continue
                 if math.isfinite(numeric_value):
                     values[key] = numeric_value
             rows.append({"values": values})
@@ -217,24 +360,15 @@ def list_demo_patients() -> dict:
     return {"patients": available}
 
 
-# In-memory cache — built once on first request, reused for all subsequent calls
-_patient_id_cache: list[str] | None = None
-
-
-def _get_all_patient_ids() -> list[str]:
-    global _patient_id_cache
-    if _patient_id_cache is None:
-        raw_dir = Path(settings.raw_data_dir)
-        _patient_id_cache = sorted(p.stem for p in raw_dir.glob("*.psv"))
-    return _patient_id_cache
-
-
 @app.get("/patients")
-def search_patients(search: str = "", limit: int = 100, offset: int = 0) -> dict:
-    """Search all patient files in the raw data directory."""
-    all_ids = _get_all_patient_ids()
+def search_patients(
+    search: str = "",
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> dict:
+    """Search all patient files using the startup-cached ID list."""
     q = search.strip().lower()
-    filtered = [pid for pid in all_ids if q in pid.lower()] if q else all_ids
+    filtered = [pid for pid in _patient_ids if q in pid.lower()] if q else _patient_ids
     total = len(filtered)
     page = filtered[offset : offset + limit]
     return {
@@ -332,16 +466,32 @@ def model_metrics() -> dict:
     }
 
 
-@app.post("/evaluate", response_model=EvaluatePatientResponse)
+@app.post("/evaluate", response_model=EvaluatePatientResponse, dependencies=[Depends(_rate_limit)])
 def evaluate_patient(request: EvaluatePatientRequest) -> EvaluatePatientResponse:
     return get_workflow().evaluate(request)
 
 
-@app.post("/explain", response_model=ExplainPatientResponse)
+@app.post("/explain", response_model=ExplainPatientResponse, dependencies=[Depends(_rate_limit)])
 def explain_patient(request: EvaluatePatientRequest) -> ExplainPatientResponse:
     """Return SHAP feature contributions (lab) and temporal saliency (vitals) without running the full decision pipeline."""
     workflow = get_workflow()
     records = request.observation_window
+
+    # Signal quality gate — running SHAP on a fully suppressed (artifacted) window
+    # would return misleading contributions that contradict the /evaluate decision.
+    signal_quality, _ = workflow.signal_quality_agent.evaluate(
+        [record.values for record in records]
+    )
+    if not signal_quality.signal_valid and signal_quality.suppression_recommendation:
+        _suppressed = AgentExplanation(
+            status="unavailable",
+            explanation="Signal fully suppressed by Signal Quality Agent — explanation unavailable on an artifacted window.",
+        )
+        return ExplainPatientResponse(
+            patient_id=request.patient_id,
+            lab_explanation=_suppressed,
+            vitals_explanation=_suppressed,
+        )
 
     # --- Lab / SHAP ---
     lab_agent = workflow.lab_agent
@@ -355,8 +505,8 @@ def explain_patient(request: EvaluatePatientRequest) -> ExplainPatientResponse:
                 feature_contributions={item["feature"]: item["shap_value"] for item in contributions},
                 explanation=lab_agent.explainer.format_explanation(contributions),
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("/explain: SHAP computation failed — %s: %s", type(exc).__name__, exc)
 
     # --- Vitals / Temporal saliency ---
     vitals_agent = workflow.vitals_agent
@@ -371,8 +521,8 @@ def explain_patient(request: EvaluatePatientRequest) -> ExplainPatientResponse:
                 feature_contributions={f"t_{i + 1:02d}": float(w) for i, w in enumerate(weights)},
                 explanation=f"Temporal saliency over {n} observation hours.",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("/explain: saliency computation failed — %s: %s", type(exc).__name__, exc)
 
     return ExplainPatientResponse(
         patient_id=request.patient_id,

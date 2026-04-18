@@ -1,7 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import Any, Dict
+
+_PROBABILITY_FIELDS = frozenset({
+    "high_alert_extreme_sequence_score_threshold",
+    "high_alert_supported_sequence_score_threshold",
+    "high_alert_tabular_support_score_threshold",
+    "high_alert_max_score_threshold",
+    "high_alert_mean_score_threshold",
+    "medium_alert_sequence_score_threshold",
+    "medium_alert_tabular_score_threshold",
+    "medium_alert_max_score_threshold",
+    "resp_high_alert_threshold",
+    "resp_medium_alert_threshold",
+})
 
 from agentic_icu.domain.contracts import (
     AgentLogEntry,
@@ -39,10 +52,25 @@ class AlertPolicy:
     resp_high_alert_threshold: float | None = 0.8
     resp_medium_alert_threshold: float | None = 0.55
     resp_high_alert_type: str = "Respiratory Failure Risk"
+    partial_suppression_factor: float = 0.7
+
+    def __post_init__(self) -> None:
+        for field_name in _PROBABILITY_FIELDS:
+            val = getattr(self, field_name)
+            if val is not None and not (0.0 <= val <= 1.0):
+                raise ValueError(
+                    f"AlertPolicy.{field_name} must be in [0, 1], got {val!r}"
+                )
+        if not (0.0 <= self.partial_suppression_factor <= 1.0):
+            raise ValueError(
+                f"AlertPolicy.partial_suppression_factor must be in [0, 1], "
+                f"got {self.partial_suppression_factor!r}"
+            )
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> "AlertPolicy":
-        return cls(**payload)
+        valid_keys = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in payload.items() if k in valid_keys})
 
 
 class ClinicalReasoner:
@@ -121,7 +149,33 @@ class ClinicalReasoner:
 
         return False, ""
 
-    PARTIAL_SUPPRESSION_FACTOR = 0.7  # score multiplier for partial-suppression mode
+    @staticmethod
+    def _recompute_agent_result(result: ModelAgentResult, new_score: float | None) -> ModelAgentResult:
+        """Return a copy of result with score, risk_band, threshold_ratio, and detail all consistent."""
+        if new_score is None:
+            return result.model_copy(update={"score": None, "risk_band": "low", "threshold_ratio": None})
+
+        dt = result.decision_threshold
+        new_ratio = (new_score / dt) if dt else None
+        moderate_ratio = 0.7
+        if new_ratio is not None and new_ratio >= 1.0:
+            new_band = "high"
+        elif new_ratio is not None and new_ratio >= moderate_ratio:
+            new_band = "moderate"
+        else:
+            new_band = "low"
+
+        if dt is not None and new_ratio is not None:
+            new_detail = f"Score suppression-adjusted to {new_score:.3f} ({new_ratio:.2f}x threshold)."
+        else:
+            new_detail = f"Score suppression-adjusted to {new_score:.3f}."
+
+        return result.model_copy(update={
+            "score": new_score,
+            "risk_band": new_band,
+            "threshold_ratio": new_ratio,
+            "detail": new_detail,
+        })
 
     def decide(
         self,
@@ -129,7 +183,7 @@ class ClinicalReasoner:
         vitals_result: ModelAgentResult,
         lab_result: ModelAgentResult,
         resp_result: ModelAgentResult | None = None,
-    ) -> tuple[ClinicalDecision, list[AgentLogEntry]]:
+    ) -> tuple[ClinicalDecision, list[AgentLogEntry], ModelAgentResult, ModelAgentResult, ModelAgentResult | None]:
         logs: list[AgentLogEntry] = []
 
         # Full suppression — hard block, no alert
@@ -141,17 +195,20 @@ class ClinicalReasoner:
                 rationale=self.policy.suppressed_artifact_rationale,
             )
             logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
-            return decision, logs
+            return decision, logs, vitals_result, lab_result, resp_result
 
-        # Partial suppression — signal valid but suspect; apply score penalty
+        # Partial suppression — signal valid but suspect; apply score penalty to all
+        # agent results so that score, risk_band, threshold_ratio, and detail remain
+        # internally consistent in the response payload.
         if signal_quality.suppression_mode == "partial" and signal_quality.suppression_recommendation:
             affected = signal_quality.artifact_affected_features
-            f = self.PARTIAL_SUPPRESSION_FACTOR
+            f = self.policy.partial_suppression_factor
             vitals_score_adj = vitals_result.score * f if vitals_result.score is not None else None
             lab_score_adj = lab_result.score * f if lab_result.score is not None else None
-            # Build adjusted result copies (shallow override via model_copy for Pydantic v2)
-            vitals_result = vitals_result.model_copy(update={"score": vitals_score_adj})
-            lab_result = lab_result.model_copy(update={"score": lab_score_adj})
+            vitals_result = self._recompute_agent_result(vitals_result, vitals_score_adj)
+            lab_result = self._recompute_agent_result(lab_result, lab_score_adj)
+            if resp_result is not None and resp_result.score is not None:
+                resp_result = self._recompute_agent_result(resp_result, resp_result.score * f)
             logs.append(AgentLogEntry(
                 agent="Clinical Reasoner",
                 message=(
@@ -164,6 +221,40 @@ class ClinicalReasoner:
         available_scores = [score for score in (vitals_result.score, lab_result.score) if score is not None]
 
         if not available_scores:
+            # Sepsis models have no score — check whether resp alone can fire an alert
+            # before falling back to "models unavailable".
+            resp_score_lone = resp_result.score if resp_result is not None else None
+            if resp_score_lone is not None:
+                if (
+                    self.policy.resp_high_alert_threshold is not None
+                    and resp_score_lone >= self.policy.resp_high_alert_threshold
+                ):
+                    decision = ClinicalDecision(
+                        alert_triggered=True,
+                        alert_type=self.policy.resp_high_alert_type,
+                        priority=self.policy.high_alert_priority,
+                        rationale=(
+                            f"Respiratory failure risk is elevated (resp score {resp_score_lone:.3f}). "
+                            "Sepsis models unavailable."
+                        ),
+                    )
+                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    return decision, logs, vitals_result, lab_result, resp_result
+                if (
+                    self.policy.resp_medium_alert_threshold is not None
+                    and resp_score_lone >= self.policy.resp_medium_alert_threshold
+                ):
+                    decision = ClinicalDecision(
+                        alert_triggered=True,
+                        alert_type=self.policy.medium_alert_type,
+                        priority=self.policy.medium_alert_priority,
+                        rationale=(
+                            f"Respiratory failure risk is elevated (resp score {resp_score_lone:.3f}). "
+                            "Sepsis models unavailable."
+                        ),
+                    )
+                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    return decision, logs, vitals_result, lab_result, resp_result
             decision = ClinicalDecision(
                 alert_triggered=False,
                 alert_type=self.policy.models_unavailable_alert_type,
@@ -171,7 +262,7 @@ class ClinicalReasoner:
                 rationale=self.policy.models_unavailable_rationale,
             )
             logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
-            return decision, logs
+            return decision, logs, vitals_result, lab_result, resp_result
 
         max_score = max(available_scores)
         mean_score = sum(available_scores) / len(available_scores)
@@ -202,7 +293,6 @@ class ClinicalReasoner:
         )
 
         if resp_high and not high_triggered:
-            # Resp is critical but sepsis is not — issue respiratory failure alert
             resp_rationale = (
                 f"{rationale} Respiratory failure risk is elevated (resp score {resp_score:.3f})."
                 if rationale
@@ -215,7 +305,6 @@ class ClinicalReasoner:
                 rationale=resp_rationale,
             )
         elif high_triggered:
-            # Sepsis high + resp high: co-alert note in rationale
             extra = f" Respiratory compromise also detected (resp score {resp_score:.3f})." if resp_high else ""
             decision = ClinicalDecision(
                 alert_triggered=True,
@@ -232,7 +321,6 @@ class ClinicalReasoner:
                 rationale=rationale + extra,
             )
         elif resp_medium:
-            # Resp elevated but not critical, sepsis stable — bump to medium watch
             decision = ClinicalDecision(
                 alert_triggered=True,
                 alert_type=self.policy.medium_alert_type,
@@ -263,7 +351,7 @@ class ClinicalReasoner:
         elif resp_medium:
             logs.append(AgentLogEntry(agent="Clinical Reasoner", message=f"Resp medium-alert: resp score {resp_score:.3f} >= {self.policy.resp_medium_alert_threshold}."))
         logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
-        return decision, logs
+        return decision, logs, vitals_result, lab_result, resp_result
 
     def _compose_rationale(
         self,
@@ -274,33 +362,22 @@ class ClinicalReasoner:
         vitals_result: ModelAgentResult,
         lab_result: ModelAgentResult,
     ) -> str:
-        """Compose a plain-language rationale from agent explanations.
-
-        If agents have produced SHAP / saliency explanations, the rationale
-        describes *what* drove the alert.  Falls back to static policy strings
-        when no explanation data is available.
-        """
         parts: list[str] = []
 
-        # --- Tabular (SHAP) explanation ---
         if lab_result.explanation:
             parts.append(lab_result.explanation)
 
-        # --- Sequence (temporal saliency) explanation ---
         if vitals_result.explanation:
             parts.append(vitals_result.explanation)
 
-        # --- Alert context ---
         if high_triggered:
             if not parts:
                 return self.policy.high_alert_rationale
-            context = f"High deterioration risk triggered ({high_basis})."
-            parts.append(context)
+            parts.append(f"High deterioration risk triggered ({high_basis}).")
         elif medium_triggered:
             if not parts:
                 return self.policy.medium_alert_rationale
-            context = f"Elevated risk — monitoring recommended ({medium_basis})."
-            parts.append(context)
+            parts.append(f"Elevated risk — monitoring recommended ({medium_basis}).")
         else:
             if not parts:
                 return self.policy.stable_rationale

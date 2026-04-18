@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from agentic_icu.domain.contracts import AgentLogEntry, ModelAgentResult
 from agentic_icu.inference.explainer import TabularExplainer
 from agentic_icu.inference.tabular import XGBoostInference
 from agentic_icu.preprocessing.windowing import RuntimePreprocessor
+
+logger = logging.getLogger(__name__)
 
 
 class LabTabularAgent:
@@ -61,8 +64,8 @@ class LabTabularAgent:
                     top_label = top_list[0]["label"]
                     arrow = "↑" if top_list[0]["direction"] == "increases_risk" else "↓"
                     detail += f" Primary driver: {top_label} ({arrow})."
-            except Exception:
-                pass  # SHAP failure must never break inference
+            except Exception as exc:
+                logger.warning("LabTabularAgent: SHAP computation failed — %s: %s", type(exc).__name__, exc)
 
         result = ModelAgentResult(
             status="available",

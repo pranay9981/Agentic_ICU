@@ -291,7 +291,7 @@
         <summary class="da-head">Alert History</summary>
         <div class="da-body">
           <div class="ah-bar">
-            <span class="empty-msg">Session alerts (localStorage)</span>
+            <span class="empty-msg">Session alerts (session-scoped)</span>
             <button id="clear-alert-history" class="btn-xs" type="button">Clear</button>
           </div>
           <ol id="alert-history-log" class="ah-list">
@@ -304,6 +304,10 @@
   </aside>
 
 </div><!-- /icu-workspace -->
+
+<!-- Screen-reader alert announcer (visually hidden) -->
+<div id="alert-announcer" role="status" aria-live="polite" aria-atomic="true"
+     style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></div>
 
 <!-- Hidden compat elements -->
 <div aria-hidden="true" style="display:none">
@@ -320,7 +324,7 @@
 
 <!-- Patient selection modal -->
 <div id="patient-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
-  <div class="patient-modal" role="dialog" aria-label="Select Patient">
+  <div class="patient-modal" role="dialog" aria-modal="true" aria-label="Select Patient">
     <div class="pm-header">
       <div class="pm-title-row">
         <h2 class="pm-title" id="pm-title">Browse Patients</h2>
@@ -350,7 +354,7 @@
 
 <!-- Model Metrics Modal -->
 <div id="metrics-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
-  <div class="metrics-modal" role="dialog" aria-label="Model Performance">
+  <div class="metrics-modal" role="dialog" aria-modal="true" aria-label="Model Performance">
     <div class="mm-header">
       <div class="mm-title-row">
         <div class="mm-title-group">

@@ -32,6 +32,14 @@ const CLINICAL_ACTIONS = {
   "Stable": ["Continue standard monitoring per unit protocol"],
 };
 
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function clinicalLabel(name) {
   const MAP = {
     HR:"Heart Rate", O2Sat:"SpO₂", Resp:"Resp Rate", MAP:"MAP",
@@ -52,9 +60,9 @@ const state = {
   timelineData: [],
   timelineRunning: false,
   alertHistory: [],
+  alertPolicy: null,
   // compat
   patientId: null, observationWindow: [], monitorIndex: 0,
-  playbackTimer: null, playbackMs: 1200, playing: false,
   lastKnownValues: {}, station: {}, stationPatientCount: 4,
   activeStationPatientIds: [], evaluationRequestId: 0, animationHandle: null,
 };
@@ -136,10 +144,30 @@ const countTotal         = $("count-total");
 const gridStatus         = $("grid-status");
 
 // ── API ───────────────────────────────────────────────────────────────────
-async function apiFetch(path, opts) {
-  const r = await fetch(path, opts);
-  if (!r.ok) { const b = await r.json().catch(() => ({})); throw Object.assign(new Error(b.detail || r.statusText), {status: r.status}); }
-  return r.json();
+const API_TIMEOUT_MS = 30000;
+
+async function apiFetch(path, opts = {}) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const key = sessionStorage.getItem("icu_api_key") || "";
+    const headers = { ...(opts.headers || {}) };
+    if (key) headers["X-API-Key"] = key;
+    const r = await fetch(path, { ...opts, headers, signal: controller.signal });
+    if (r.status === 401) {
+      const newKey = prompt("API key required — enter your X-API-Key:");
+      if (newKey) { sessionStorage.setItem("icu_api_key", newKey.trim()); return apiFetch(path, opts); }
+      throw Object.assign(new Error("Unauthorized"), { status: 401 });
+    }
+    if (!r.ok) {
+      const b = await r.json().catch(() => ({}));
+      const msg = Array.isArray(b.detail) ? JSON.stringify(b.detail) : (b.detail || r.statusText);
+      throw Object.assign(new Error(msg), { status: r.status });
+    }
+    return r.json();
+  } finally {
+    clearTimeout(tid);
+  }
 }
 const apiEvaluate      = (pid, win)   => apiFetch("/evaluate",    {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({patient_id:pid,observation_window:win})});
 const apiDemoPatient   = (pid, n=24)  => apiFetch(`/demo-patient/${encodeURIComponent(pid)}?max_rows=${n}`);
@@ -294,7 +322,7 @@ function renderSHAPBars(container, contrib) {
   container.innerHTML = items.map(([feat, val]) => {
     const pct = (Math.abs(val)/maxAbs*100).toFixed(1);
     return `<div class="shap-row">
-      <span class="shap-feat" title="${feat}">${clinicalLabel(feat)}</span>
+      <span class="shap-feat" title="${escHtml(feat)}">${clinicalLabel(feat)}</span>
       <div class="shap-bar-wrap"><div class="shap-bar ${val>=0?"pos":"neg"}" style="width:${pct}%"></div></div>
       <span class="shap-val">${val>=0?"+":""}${val.toFixed(3)}</span>
     </div>`;
@@ -321,7 +349,7 @@ function renderAgentTiles(result) {
     if (vitalsScore) vitalsScore.textContent = v.score!=null ? v.score.toFixed(3) : "--";
     setMeter(vitalsMeter, v.score); setBand(vitalsBand, v.risk_band);
     if (vitalsThreshold) vitalsThreshold.textContent = v.decision_threshold?.toFixed(3)??"--";
-    if (vitalsRatio && v.score!=null && v.decision_threshold) vitalsRatio.textContent = (v.score/v.decision_threshold).toFixed(2)+"×";
+    if (vitalsRatio) vitalsRatio.textContent = v.threshold_ratio != null ? v.threshold_ratio.toFixed(2)+"×" : "--";
     if (vitalsDetail) vitalsDetail.textContent = v.detail||"";
     if (vitalsTrace && v.decision_threshold) setMeter(vitalsTrace, v.decision_threshold);
   }
@@ -329,7 +357,7 @@ function renderAgentTiles(result) {
     if (labScore) labScore.textContent = l.score!=null ? l.score.toFixed(3) : "--";
     setMeter(labMeter, l.score); setBand(labBand, l.risk_band);
     if (labThreshold) labThreshold.textContent = l.decision_threshold?.toFixed(3)??"--";
-    if (labRatio && l.score!=null && l.decision_threshold) labRatio.textContent = (l.score/l.decision_threshold).toFixed(2)+"×";
+    if (labRatio) labRatio.textContent = l.threshold_ratio != null ? l.threshold_ratio.toFixed(2)+"×" : "--";
     if (labDetail) labDetail.textContent = l.detail||"";
     if (labTrace && l.decision_threshold) setMeter(labTrace, l.decision_threshold);
   }
@@ -337,7 +365,7 @@ function renderAgentTiles(result) {
     if (respScore) respScore.textContent = r.score!=null ? r.score.toFixed(3) : "--";
     setMeter(respMeter, r.score); setBand(respBand, r.risk_band);
     if (respThreshold) respThreshold.textContent = r.decision_threshold?.toFixed(3)??"--";
-    if (respRatio && r.score!=null && r.decision_threshold) respRatio.textContent = (r.score/r.decision_threshold).toFixed(2)+"×";
+    if (respRatio) respRatio.textContent = r.threshold_ratio != null ? r.threshold_ratio.toFixed(2)+"×" : "--";
     if (respDetail) respDetail.textContent = r.detail||"";
     if (respTrace && r.decision_threshold) setMeter(respTrace, r.decision_threshold);
   }
@@ -382,7 +410,7 @@ function renderSignalQuality(result) {
   }
   if (reasoningLog && result.reasoning_log) {
     reasoningLog.innerHTML = result.reasoning_log.length
-      ? result.reasoning_log.map(e=>`<li><strong>${e.agent}:</strong> ${e.message}</li>`).join("")
+      ? result.reasoning_log.map(e=>`<li><strong>${escHtml(e.agent)}:</strong> ${escHtml(e.message)}</li>`).join("")
       : '<li class="empty-msg">No reasoning trace.</li>';
   }
 }
@@ -412,16 +440,17 @@ function renderSidebar(patientId) {
 
 // ── Monitor card HTML ─────────────────────────────────────────────────────
 function buildMonitorCard(entry) {
-  const { id, window: win, result, loading } = entry;
-  const cd  = result?.clinical_decision;
-  const va  = result?.vitals_agent;
-  const ra  = result?.resp_failure_agent;
-  const pri = cd?.priority || (loading ? "loading" : "pending");
+  const { id, window: win, result, loading, lastError } = entry;
+  const cd      = result?.clinical_decision;
+  const va      = result?.vitals_agent;
+  const ra      = result?.resp_failure_agent;
+  const timedOut = lastError === "timeout";
+  const pri     = cd?.priority || (loading ? "loading" : "pending");
 
   const cls      = pri==="high"?"mc-critical":pri==="medium"?"mc-watch":pri==="loading"?"mc-loading":"mc-stable";
-  const badge    = pri==="high"?"critical":pri==="medium"?"watch":pri==="loading"?"loading":pri==="pending"?"pending":"stable";
-  const badgeTxt = pri==="high"?"CRITICAL":pri==="medium"?"WATCH":pri==="loading"?"Evaluating…":pri==="pending"?"Pending":"STABLE";
-  const alertTxt = cd?.alert_type || (loading ? "Running inference…" : "Awaiting evaluation");
+  const badge    = pri==="high"?"critical":pri==="medium"?"watch":pri==="loading"?"loading":timedOut?"error":pri==="pending"?"pending":"stable";
+  const badgeTxt = pri==="high"?"CRITICAL":pri==="medium"?"WATCH":pri==="loading"?"Evaluating…":timedOut?"TIMEOUT":pri==="pending"?"Pending":"STABLE";
+  const alertTxt = cd?.alert_type || (loading ? "Running inference…" : timedOut ? "Request timed out — will retry" : "Awaiting evaluation");
 
   const cf    = entry.currentFrame || win?.length || 0;
   const total = win?.length || 0;
@@ -457,7 +486,7 @@ function buildMonitorCard(entry) {
     </div>
     <div class="mc-live-bar">
       ${total ? '<span class="live-dot"></span><span class="live-lbl">LIVE</span>' : '<span class="live-lbl pend">—</span>'}
-      <span class="mc-alert-type">${alertTxt}</span>
+      <span class="mc-alert-type">${escHtml(alertTxt)}</span>
     </div>
     <div class="mc-mid">
       <div class="mc-vitals">
@@ -645,8 +674,37 @@ let pmResults     = [];
 let pmSearchTimer = null;
 const PM_LIMIT    = 100;
 
+// ── Modal focus trap ──────────────────────────────────────────────────────
+function _trapFocus(modal, e) {
+  if (e.key !== "Tab") return;
+  const sel = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  const focusable = [...modal.querySelectorAll(sel)].filter(el => el.offsetParent !== null);
+  if (focusable.length < 2) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+function _attachTrap(modal) {
+  if (!modal) return;
+  if (modal._focusTrap) modal.removeEventListener("keydown", modal._focusTrap);
+  modal._focusTrap = e => _trapFocus(modal, e);
+  modal.addEventListener("keydown", modal._focusTrap);
+}
+
+function _detachTrap(modal) {
+  if (!modal?._focusTrap) return;
+  modal.removeEventListener("keydown", modal._focusTrap);
+  delete modal._focusTrap;
+}
+
 function closePatientModal() {
-  $("patient-modal-backdrop")?.classList.add("hidden");
+  const backdrop = $("patient-modal-backdrop");
+  if (!backdrop) return;
+  _detachTrap(backdrop.querySelector('[role="dialog"]'));
+  backdrop.classList.add("hidden");
+  backdrop.setAttribute("aria-hidden", "true");
+  $("browse-patients-btn")?.focus();
 }
 
 function renderPatientRows(items) {
@@ -659,11 +717,11 @@ function renderPatientRows(items) {
 
   const rows = items.map(p => {
     const onBoard = state.patients.has(p.id);
-    const dot   = p.tone ? `<span class="pm-risk-dot ${p.tone}"></span>` : `<span class="pm-risk-dot low"></span>`;
-    const label = p.label ? `<span class="pm-label ${p.tone||"low"}">${p.label}</span>` : "";
-    return `<div class="pm-row${onBoard?" on-board":""}" data-id="${p.id}">
+    const dot   = p.tone ? `<span class="pm-risk-dot ${escHtml(p.tone)}"></span>` : `<span class="pm-risk-dot low"></span>`;
+    const label = p.label ? `<span class="pm-label ${escHtml(p.tone||"low")}">${escHtml(p.label)}</span>` : "";
+    return `<div class="pm-row${onBoard?" on-board":""}" data-id="${escHtml(p.id)}">
       ${dot}
-      <span class="pm-pid">${p.id}</span>
+      <span class="pm-pid">${escHtml(p.id)}</span>
       ${label}
       <span class="pm-spacer"></span>
       ${onBoard
@@ -674,6 +732,24 @@ function renderPatientRows(items) {
 
   list.innerHTML = rows;
 
+  // Keyboard navigation: ArrowDown from search focuses first row button;
+  // ArrowUp/ArrowDown navigates between row buttons.
+  const searchInput = $("pm-search");
+  if (searchInput) {
+    searchInput.onkeydown = e => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        list.querySelector(".pm-add-btn, .pm-on-board-badge")?.focus();
+      }
+    };
+  }
+  list.addEventListener("keydown", e => {
+    const btns = [...list.querySelectorAll(".pm-add-btn")];
+    const idx  = btns.indexOf(document.activeElement);
+    if (e.key === "ArrowDown" && idx < btns.length - 1) { e.preventDefault(); btns[idx+1].focus(); }
+    if (e.key === "ArrowUp"   && idx > 0)               { e.preventDefault(); btns[idx-1].focus(); }
+    if (e.key === "ArrowUp"   && idx === 0)              { e.preventDefault(); searchInput?.focus(); }
+  });
   // Wire add buttons
   list.querySelectorAll(".pm-add-btn").forEach(btn => {
     btn.addEventListener("click", e => {
@@ -714,7 +790,8 @@ async function fetchPatients() {
     const titleEl = $("pm-title");
     if (titleEl && !pmSearch) titleEl.textContent = `Browse Patients`;
     renderPatientRows(pmResults);
-  } catch(_) {
+  } catch(err) {
+    console.error("[fetchPatients]:", err);
     list.innerHTML = '<div class="pm-no-results">Failed to load patients</div>';
   }
 }
@@ -729,10 +806,12 @@ async function openPatientModal() {
   const backdrop = $("patient-modal-backdrop");
   if (!backdrop) return;
   backdrop.classList.remove("hidden");
+  backdrop.removeAttribute("aria-hidden");
   pmSearch = "";
   const searchEl = $("pm-search");
   if (searchEl) { searchEl.value = ""; searchEl.focus(); }
   document.querySelectorAll(".pm-filter").forEach(b => b.classList.toggle("active", b.dataset.filter === "all"));
+  _attachTrap(backdrop.querySelector('[role="dialog"]'));
   fetchPatients();
 }
 
@@ -748,15 +827,22 @@ async function runTimelineAnalysis(patientId) {
   if (runTimelineBtn)   runTimelineBtn.classList.add("running");
   if (timelineStatus)   timelineStatus.textContent = "Evaluating…";
 
-  for (let n=1; n<=total; n++) {
-    if (state.selectedId !== patientId) break;
-    try {
-      const r = await apiEvaluate(patientId, win.slice(0, n));
-      state.timelineData.push({ hour:n, sepsis:r.vitals_agent?.score??0, resp:r.resp_failure_agent?.score??0 });
-      drawTimelineSvg(state.timelineData, total);
-    } catch(_) {}
-    if (tpBar)   tpBar.style.width = (n/total*100).toFixed(0)+"%";
-    if (tpLabel) tpLabel.textContent = `Frame ${n} / ${total}`;
+  const CONCURRENCY = 4;
+  let done = 0;
+  while (done < total && state.selectedId === patientId) {
+    const batchEnd = Math.min(done + CONCURRENCY, total);
+    const frames = Array.from({length: batchEnd - done}, (_, i) => done + i + 1);
+    const items = await Promise.all(frames.map(f =>
+      apiEvaluate(patientId, win.slice(0, f))
+        .then(r => ({hour:f, sepsis:r.vitals_agent?.score??0, resp:r.resp_failure_agent?.score??0}))
+        .catch(err => { console.error(`[timeline] frame ${f}:`, err); return null; })
+    ));
+    for (const item of items) if (item) state.timelineData.push(item);
+    state.timelineData.sort((a,b) => a.hour - b.hour);
+    drawTimelineSvg(state.timelineData, total);
+    done = batchEnd;
+    if (tpBar)   tpBar.style.width = (done/total*100).toFixed(0)+"%";
+    if (tpLabel) tpLabel.textContent = `Frame ${done} / ${total}`;
   }
   state.timelineRunning = false;
   if (runTimelineBtn)   runTimelineBtn.classList.remove("running");
@@ -773,7 +859,11 @@ function drawTimelineSvg(results, maxH) {
   const gW=W-px*2, gH=H-py*2;
   const sx = h => px + ((h-1)/Math.max(maxH-1,1))*gW;
   const sy = v => py + (1-v)*gH;
-  const zh=sy(0.88), zw=sy(0.80), zm=sy(0.55);
+  const ap = state.alertPolicy || {};
+  const th_extreme = ap.high_alert_extreme_sequence_score_threshold ?? 0.88;
+  const th_watch   = ap.high_alert_supported_sequence_score_threshold ?? 0.80;
+  const th_medium  = ap.medium_alert_sequence_score_threshold ?? 0.55;
+  const zh=sy(th_extreme), zw=sy(th_watch), zm=sy(th_medium);
   let s = `<rect x="${px}" y="${py}"  width="${gW}" height="${zh-py}"  fill="rgba(248,113,113,.07)"/>
     <rect x="${px}" y="${zh}" width="${gW}" height="${zw-zh}" fill="rgba(251,191,36,.05)"/>
     <line x1="${px}" y1="${zh}" x2="${W-px}" y2="${zh}" stroke="rgba(248,113,113,.5)" stroke-width=".7" stroke-dasharray="4,3"/>
@@ -826,17 +916,19 @@ async function loadPatientData(patientId) {
 async function evaluatePatient(patientId) {
   const entry = state.patients.get(patientId);
   if (!entry?.window) return;
-  state.patients.set(patientId, {...entry, loading:true});
+  state.patients.set(patientId, {...entry, loading:true, lastError: null});
   renderGrid();
   if (state.selectedId === patientId) renderSidebar(patientId);
   try {
     const result = await apiEvaluate(patientId, entry.window);
-    state.patients.set(patientId, {...state.patients.get(patientId), result, loadedAt:new Date(), loading:false});
+    state.patients.set(patientId, {...state.patients.get(patientId), result, loadedAt:new Date(), loading:false, lastError: null});
     recordAlert(patientId, result);
     renderGrid();
     if (state.selectedId === patientId) renderSidebar(patientId);
-  } catch(_) {
-    state.patients.set(patientId, {...state.patients.get(patientId), loading:false});
+  } catch(err) {
+    const isTimeout = err.name === "AbortError";
+    console.error(`[evaluatePatient] ${patientId}:`, isTimeout ? "Request timed out (30s)" : err);
+    state.patients.set(patientId, {...state.patients.get(patientId), loading:false, lastError: isTimeout ? "timeout" : null});
     renderGrid();
   }
 }
@@ -855,16 +947,20 @@ async function loadPatient(patientId, autoSelect=false) {
 async function reEvaluate() {
   const id = state.selectedId;
   if (!id) return;
+  const entry = state.patients.get(id);
   const btn = $("toggle-playback");
   if (btn) { btn.classList.add("loading"); btn.textContent = "Evaluating…"; }
   try {
-    const demo = await apiDemoPatient(id, 24);
+    const currentRows = entry?.window?.length || 24;
+    const demo = await apiDemoPatient(id, currentRows);
     const result = await apiEvaluate(id, demo.observation_window);
     state.patients.set(id, {...state.patients.get(id), window:demo.observation_window, result, loadedAt:new Date(), loading:false});
     recordAlert(id, result);
     renderGrid();
     renderSidebar(id);
-  } catch(_) {}
+  } catch(err) {
+    console.error("[reEvaluate]:", err);
+  }
   if (btn) { btn.classList.remove("loading"); btn.textContent = "Re-evaluate"; }
 }
 
@@ -874,18 +970,20 @@ function recordAlert(pid, result) {
   if (!cd?.alert_triggered) return;
   state.alertHistory.unshift({time:new Date().toLocaleTimeString(), patientId:pid, alertType:cd.alert_type, priority:cd.priority||"low"});
   if (state.alertHistory.length > 500) state.alertHistory.length = 500;
-  try { localStorage.setItem("icu_alerts", JSON.stringify(state.alertHistory)); } catch(_) {}
+  try { sessionStorage.setItem("icu_alerts", JSON.stringify(state.alertHistory)); } catch(_) {}
   renderAlertHistory();
   updateAlertCounter();
+  const announcer = $("alert-announcer");
+  if (announcer) announcer.textContent = `New alert: ${cd.alert_type} for patient ${pid}`;
 }
 function loadAlertHistory() {
-  try { const s=localStorage.getItem("icu_alerts"); if (s) state.alertHistory=JSON.parse(s); } catch(_) {}
+  try { const s=sessionStorage.getItem("icu_alerts"); if (s) state.alertHistory=JSON.parse(s); } catch(_) {}
   renderAlertHistory(); updateAlertCounter();
 }
 function renderAlertHistory() {
   if (!alertHistoryLog) return;
   alertHistoryLog.innerHTML = state.alertHistory.length
-    ? state.alertHistory.map(a=>`<li class="ah-item ${a.priority}"><span class="ah-time">${a.time}</span><span class="ah-patient">${a.patientId}</span><span class="ah-type">${a.alertType}</span></li>`).join("")
+    ? state.alertHistory.map(a=>`<li class="ah-item ${escHtml(a.priority)}"><span class="ah-time">${escHtml(a.time)}</span><span class="ah-patient">${escHtml(a.patientId)}</span><span class="ah-type">${escHtml(a.alertType)}</span></li>`).join("")
     : '<li class="empty-msg">No alerts yet.</li>';
 }
 function updateAlertCounter() {
@@ -904,6 +1002,7 @@ async function refreshHealth() {
       {l:"Preprocessing",ok:h.preprocessing_ready},
       {l:"XGBoost (Lab)", ok:h.xgboost_ready},
       {l:"GRU (Vitals)",  ok:h.sequence_ready},
+      {l:"GRU (Resp)",    ok:h.resp_ready},
       {l:`${h.patient_count??0} patients`,ok:true},
       {l:`Load ${h.load_latency_ms??0}ms`,ok:true},
     ].map(r=>`<div class="health-row"><span>${r.l}</span><span class="${r.ok?"ok":"fail"}">${r.ok?"●":"✗"}</span></div>`).join("");
@@ -912,6 +1011,7 @@ async function refreshHealth() {
   }
   try {
     const cfg = await apiConfig();
+    if (cfg.alert_policy) state.alertPolicy = cfg.alert_policy;
     if (policySummary && cfg.alert_policy) {
       const p = cfg.alert_policy;
       policySummary.innerHTML = [
@@ -985,8 +1085,8 @@ async function advanceLiveFrame(id) {
   const ft = document.getElementById(`mc-foot-${id}`);
   if (ft) ft.textContent = `H${next} / H${total}`;
 
-  // Re-evaluate every 3 frames or when looping back to H1 (non-blocking)
-  if (next % 3 === 0 || next === 1) {
+  // Re-evaluate every 3 frames or when looping back to H1 — skip when tab is hidden
+  if ((next % 3 === 0 || next === 1) && !document.hidden) {
     evaluatePatientSilent(id, frameWin);
   }
 
@@ -1002,7 +1102,9 @@ async function evaluatePatientSilent(id, win) {
     recordAlert(id, result);
     updateCardScore(id);
     if (state.selectedId === id) renderSidebar(id);
-  } catch (_) {}
+  } catch (err) {
+    if (err.name !== "AbortError") console.error(`[evaluatePatientSilent] ${id}:`, err);
+  }
 }
 
 function startLiveMonitoring() {
@@ -1065,13 +1167,19 @@ function openMetricsModal() {
   if (!bd) return;
   bd.classList.remove("hidden");
   bd.removeAttribute("aria-hidden");
+  _attachTrap(bd.querySelector('[role="dialog"]'));
+  bd.querySelector(".pm-close-btn")?.focus();
   if (!_metricsData) fetchModelMetrics();
   else renderMetricsTab(_metricsTab);
 }
 
 function closeMetricsModal() {
   const bd = $("metrics-modal-backdrop");
-  if (bd) { bd.classList.add("hidden"); bd.setAttribute("aria-hidden","true"); }
+  if (!bd) return;
+  _detachTrap(bd.querySelector('[role="dialog"]'));
+  bd.classList.add("hidden");
+  bd.setAttribute("aria-hidden", "true");
+  $("model-metrics-btn")?.focus();
 }
 
 async function fetchModelMetrics() {
@@ -1082,13 +1190,18 @@ async function fetchModelMetrics() {
     _metricsData = await apiFetch("/model-metrics");
     renderMetricsTab(_metricsTab);
   } catch(e) {
-    body.innerHTML = `<div class="pm-loading"><span style="color:var(--red)">Failed to load: ${e.message}</span></div>`;
+    body.innerHTML = `<div class="pm-loading"><span style="color:var(--red)">Failed to load: ${escHtml(e.message)}</span><button class="gt-btn mm-retry-btn" style="margin-top:12px;padding:6px 18px">Retry</button></div>`;
+    body.querySelector(".mm-retry-btn")?.addEventListener("click", fetchModelMetrics);
   }
 }
 
 function renderMetricsTab(tab) {
   _metricsTab = tab;
-  document.querySelectorAll(".mm-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll(".mm-tab").forEach(b => {
+    const isActive = b.dataset.tab === tab;
+    b.classList.toggle("active", isActive);
+    b.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
   const body = $("mm-body");
   if (!body || !_metricsData) return;
   if (tab === "overview") {
@@ -1376,8 +1489,8 @@ async function boot() {
   // Load remaining windows in parallel (fast — file reads only)
   await Promise.all(IDS.slice(1).map(id => loadPatientData(id)));
 
-  // Evaluate remaining patients one by one
-  for (const id of IDS.slice(1)) await evaluatePatient(id);
+  // Evaluate remaining patients in parallel
+  await Promise.all(IDS.slice(1).map(id => evaluatePatient(id)));
 
   // Start live monitoring for all patients (vital tick + frame advance)
   startLiveMonitoring();
@@ -1385,7 +1498,11 @@ async function boot() {
 
 // ── Event bindings ────────────────────────────────────────────────────────
 $("load-demo")?.addEventListener("click", () => {
-  const id = patientInput?.value?.trim(); if (!id) return;
+  const id = patientInput?.value?.trim();
+  if (!id) {
+    if (patientInput) { patientInput.style.outline = "1px solid var(--red)"; setTimeout(() => { patientInput.style.outline = ""; }, 1200); }
+    return;
+  }
   if (!state.patients.has(id)) loadPatient(id, true);
   else selectPatient(id);
 });
@@ -1426,30 +1543,43 @@ $("close-sidebar")?.addEventListener("click", () => {
 $("run-timeline")?.addEventListener("click", () => { if (state.selectedId) runTimelineAnalysis(state.selectedId); });
 $("clear-alert-history")?.addEventListener("click", () => {
   state.alertHistory = [];
-  try { localStorage.removeItem("icu_alerts"); } catch(_) {}
+  try { sessionStorage.removeItem("icu_alerts"); } catch(_) {}
   renderAlertHistory(); updateAlertCounter();
 });
 $("grid-cols")?.addEventListener("change", e => applyGridCols(e.target.value));
-$("step-back")?.addEventListener("click", () => {
-  const e = state.selectedId ? state.patients.get(state.selectedId) : null;
+let _stepReqId = 0;
+function _doStep(delta) {
+  const pid = state.selectedId;
+  const e = pid ? state.patients.get(pid) : null;
   if (!e?.window) return;
-  const n = Math.max(1, (state.monitorIndex||e.window.length)-1);
+  const n = Math.min(e.window.length, Math.max(1, (state.monitorIndex || e.window.length) + delta));
   state.monitorIndex = n;
-  apiEvaluate(state.selectedId, e.window.slice(0,n)).then(r => {
-    state.patients.set(state.selectedId, {...e, result:r, loadedAt:new Date()});
-    renderGrid(); renderSidebar(state.selectedId);
-  }).catch(()=>{});
-});
-$("step-forward")?.addEventListener("click", () => {
-  const e = state.selectedId ? state.patients.get(state.selectedId) : null;
-  if (!e?.window) return;
-  const n = Math.min(e.window.length, (state.monitorIndex||1)+1);
-  state.monitorIndex = n;
-  apiEvaluate(state.selectedId, e.window.slice(0,n)).then(r => {
-    state.patients.set(state.selectedId, {...e, result:r, loadedAt:new Date()});
-    renderGrid(); renderSidebar(state.selectedId);
-  }).catch(()=>{});
-});
+  const reqId = ++_stepReqId;
+  apiEvaluate(pid, e.window.slice(0, n)).then(r => {
+    // Discard result if a newer step fired or user switched patients
+    if (reqId !== _stepReqId || state.selectedId !== pid) return;
+    state.patients.set(pid, { ...state.patients.get(pid), result: r, loadedAt: new Date() });
+    renderGrid(); renderSidebar(pid);
+  }).catch(err => {
+    if (err.name !== "AbortError") console.error("[step]:", err);
+  });
+}
+$("step-back")?.addEventListener("click", () => _doStep(-1));
+$("step-forward")?.addEventListener("click", () => _doStep(+1));
 $("run-eval")?.addEventListener("click", reEvaluate);
+
+// Pause live evaluation (not vital tick) when tab is hidden — resumes on visibility
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    // Re-evaluate all patients that haven't had a fresh result in the last 30s
+    const staleMs = 30_000;
+    const now = Date.now();
+    for (const [id, entry] of state.patients) {
+      if (entry.window?.length && (!entry.loadedAt || (now - entry.loadedAt.getTime()) > staleMs)) {
+        evaluatePatientSilent(id);
+      }
+    }
+  }
+});
 
 boot();

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from agentic_icu.domain.contracts import AgentLogEntry, ModelAgentResult
 from agentic_icu.inference.sequence import SequenceInference
 from agentic_icu.inference.tabular import XGBoostInference
 from agentic_icu.preprocessing.windowing import RuntimePreprocessor
+
+logger = logging.getLogger(__name__)
 
 
 class RespFailureAgent:
@@ -54,16 +57,6 @@ class RespFailureAgent:
         else:
             detail = f"Resp GRU risk score is {score:.3f}."
 
-        # Secondary: XGBoost context (does not affect primary score)
-        if self.xgb_predictor is not None and self.xgb_predictor.available:
-            try:
-                features = self.preprocessor.build_tabular_features(records)
-                xgb_score = self.xgb_predictor.predict(features)
-                detail += f" Tabular resp score: {xgb_score:.3f}."
-            except Exception:
-                pass
-
-        # Temporal saliency for explanation
         feature_contributions: dict[str, float] = {}
         explanation = ""
         try:
@@ -74,13 +67,13 @@ class RespFailureAgent:
             top_hours = sorted(h + 1 for h in top_steps)
             if len(top_hours) == 1:
                 focus_str = f"hour {top_hours[0]}"
-            elif top_hours[-1] - top_hours[0] <= len(top_hours):
+            elif (top_hours[-1] - top_hours[0]) == (len(top_hours) - 1):
                 focus_str = f"hours {top_hours[0]}-{top_hours[-1]}"
             else:
                 focus_str = "hours " + ", ".join(str(h) for h in top_hours)
             explanation = f"Resp model focused on observation {focus_str} of the {n_steps}h window."
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("RespFailureAgent: saliency computation failed — %s: %s", type(exc).__name__, exc)
 
         result = ModelAgentResult(
             status="available",

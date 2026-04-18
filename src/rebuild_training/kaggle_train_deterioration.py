@@ -154,12 +154,17 @@ class PipelineConfig:
     sequence_focal_gamma: float = 2.0
     sequence_early_stopping_patience: int = 10
     patient_seq_max_hours: int = 72   # max ICU hours used per patient for GRU training
-    xgb_num_boost_round: int = 2500
-    xgb_early_stopping_rounds: int = 100
-    xgb_max_depth: int = 6
+    xgb_num_boost_round: int = 3000
+    xgb_early_stopping_rounds: int = 200
+    xgb_max_depth: int = 5
     xgb_learning_rate: float = 0.03
     xgb_subsample: float = 0.8
-    xgb_colsample_bytree: float = 0.8
+    xgb_colsample_bytree: float = 0.7
+    xgb_min_child_weight: int = 10
+    xgb_max_delta_step: int = 5
+    use_smote: bool = False
+    smote_sampling_strategy: float = 0.3
+    train_ensemble: bool = False
 
 
 @dataclass
@@ -215,12 +220,20 @@ def parse_args() -> PipelineConfig:
     parser.add_argument("--sequence_focal_gamma", type=float, default=2.0)
     parser.add_argument("--sequence_early_stopping_patience", type=int, default=10)
     parser.add_argument("--patient_seq_max_hours", type=int, default=72, help="Max ICU hours per patient sequence for GRU training.")
-    parser.add_argument("--xgb_num_boost_round", type=int, default=2500)
-    parser.add_argument("--xgb_early_stopping_rounds", type=int, default=100)
-    parser.add_argument("--xgb_max_depth", type=int, default=6)
+    parser.add_argument("--xgb_num_boost_round", type=int, default=3000)
+    parser.add_argument("--xgb_early_stopping_rounds", type=int, default=200)
+    parser.add_argument("--xgb_max_depth", type=int, default=5)
     parser.add_argument("--xgb_learning_rate", type=float, default=0.03)
     parser.add_argument("--xgb_subsample", type=float, default=0.8)
-    parser.add_argument("--xgb_colsample_bytree", type=float, default=0.8)
+    parser.add_argument("--xgb_colsample_bytree", type=float, default=0.7)
+    parser.add_argument("--xgb_min_child_weight", type=int, default=10)
+    parser.add_argument("--xgb_max_delta_step", type=int, default=5)
+    parser.add_argument("--use_smote", action="store_true", default=False,
+                        help="Apply SMOTE oversampling to the XGBoost training set (requires imbalanced-learn).")
+    parser.add_argument("--smote_sampling_strategy", type=float, default=0.3,
+                        help="SMOTE target minority/majority ratio (0.3 = 30%% positives).")
+    parser.add_argument("--train_ensemble", action="store_true", default=False,
+                        help="Train a logistic-regression meta-learner on GRU + XGBoost calibrated val probabilities.")
     args = parser.parse_args()
     return PipelineConfig(**vars(args))
 
@@ -636,7 +649,32 @@ def train_xgboost_model(
     neg_count = int((1 - y_train).sum())
     scale_pos_weight = float(neg_count / max(pos_count, 1))
 
-    eval_metrics = ["logloss", "aucpr", "auc"] if y_val.nunique() > 1 else ["logloss"]
+    # SMOTE oversampling (optional): synthesise minority-class windows before
+    # building the DMatrix.  SMOTE operates in feature space, not patient space,
+    # so it must run AFTER window-level feature extraction.
+    if cfg.use_smote:
+        try:
+            from imblearn.over_sampling import SMOTE  # type: ignore
+            smote = SMOTE(sampling_strategy=cfg.smote_sampling_strategy, random_state=cfg.random_seed, n_jobs=-1)
+            X_train_sm, y_train_sm = smote.fit_resample(X_train.to_numpy(), y_train.to_numpy())
+            logger.info(
+                "SMOTE applied: %d → %d training rows (pos rate %.3f → %.3f)",
+                len(y_train), len(y_train_sm),
+                float(y_train.mean()), float(y_train_sm.mean()),
+            )
+            dtrain = xgb.DMatrix(X_train_sm, label=y_train_sm, feature_names=feature_cols)
+            # Recompute scale_pos_weight on the SMOTE-augmented set
+            pos_count = int(y_train_sm.sum())
+            neg_count = int((1 - y_train_sm).sum())
+            scale_pos_weight = float(neg_count / max(pos_count, 1))
+        except ImportError:
+            logger.warning("--use_smote requires imbalanced-learn: pip install imbalanced-learn. Skipping SMOTE.")
+
+    # CRITICAL: put aucpr LAST — XGBoost early_stopping_rounds monitors the
+    # last metric in the list.  When auc was last (original bug), training stopped
+    # at iteration ~92 (AUC plateaus fast on imbalanced data) before AUPRC had
+    # time to improve.  Now early stopping is gated on AUPRC directly.
+    eval_metrics = ["logloss", "auc", "aucpr"] if y_val.nunique() > 1 else ["logloss"]
 
     params = {
         "objective": "binary:logistic",
@@ -645,16 +683,20 @@ def train_xgboost_model(
         "learning_rate": cfg.xgb_learning_rate,
         "subsample": cfg.xgb_subsample,
         "colsample_bytree": cfg.xgb_colsample_bytree,
-        "min_child_weight": 5,
-        "lambda": 1.0,
-        "alpha": 0.0,
+        "min_child_weight": cfg.xgb_min_child_weight,
+        "max_delta_step": cfg.xgb_max_delta_step,
+        "lambda": 1.5,
+        "alpha": 0.1,
         "scale_pos_weight": scale_pos_weight,
         "tree_method": "hist",
     }
     if torch.cuda.is_available():
         params["device"] = "cuda"
 
-    logger.info("Training XGBoost with %s features and scale_pos_weight=%.3f", len(feature_cols), scale_pos_weight)
+    logger.info(
+        "Training XGBoost | features=%d scale_pos_weight=%.2f max_depth=%d min_child_weight=%d max_delta_step=%d",
+        len(feature_cols), scale_pos_weight, cfg.xgb_max_depth, cfg.xgb_min_child_weight, cfg.xgb_max_delta_step,
+    )
     booster = xgb.train(
         params=params,
         dtrain=dtrain,
@@ -704,6 +746,146 @@ def train_xgboost_model(
         json.dump(metrics, handle, indent=2)
 
     return metrics
+
+
+def train_ensemble_model(
+    cfg: PipelineConfig,
+    output_dir: Path,
+    xgb_model_prefix: str = "xgboost",
+    gru_model_prefix: str = "sequence_gru",
+) -> Dict[str, Any]:
+    """Train a logistic-regression meta-learner that fuses GRU + XGBoost val probabilities.
+
+    Requires that both models have been trained and their calibrators saved to output_dir.
+    The meta-learner is trained on validation-set probabilities (not training-set) to avoid
+    leaking the base models' training signal into the stacked layer.
+    """
+    from sklearn.linear_model import LogisticRegression  # type: ignore
+    from sklearn.metrics import roc_auc_score, average_precision_score  # type: ignore
+
+    # ── Load XGBoost on val set ───────────────────────────────────────────────
+    xgb_model_path = output_dir / f"{xgb_model_prefix}_deterioration_model.json"
+    xgb_metrics_path = output_dir / f"{xgb_model_prefix}_metrics.json"
+    xgb_cal_path = output_dir / f"{xgb_model_prefix}_calibrator.pkl"
+    val_parquet = output_dir / "tabular_val.parquet"
+
+    if not all(p.exists() for p in [xgb_model_path, xgb_metrics_path, val_parquet]):
+        raise FileNotFoundError(
+            "Ensemble training requires xgb model, metrics, and tabular_val.parquet in output_dir. "
+            "Run full pipeline first."
+        )
+
+    with xgb_metrics_path.open("r", encoding="utf-8") as fh:
+        xgb_meta = json.load(fh)
+    feature_cols = xgb_meta["feature_columns"]
+
+    xgb_booster = xgb.Booster()
+    xgb_booster.load_model(str(xgb_model_path))
+    xgb_calibrator = None
+    if xgb_cal_path.exists():
+        with xgb_cal_path.open("rb") as fh:
+            xgb_calibrator = pickle.load(fh)
+
+    val_df = pd.read_parquet(val_parquet)
+    y_val = val_df["target"].astype(int).to_numpy()
+    dval = xgb.DMatrix(val_df[feature_cols], label=y_val, feature_names=feature_cols)
+    xgb_raw_val = xgb_booster.predict(dval)
+    xgb_val_prob = xgb_calibrator.predict(xgb_raw_val) if xgb_calibrator is not None else xgb_raw_val
+
+    # ── Load GRU on val set ───────────────────────────────────────────────────
+    gru_val_y_path = output_dir / f"{gru_model_prefix.replace('sequence_', 'sequence_')}_val_y.npy"
+    gru_val_y_path = output_dir / "sequence_val_y.npy"
+    gru_val_X_path = output_dir / "sequence_val_X.npy"
+    gru_metrics_path = output_dir / f"{gru_model_prefix}_metrics.json"
+    gru_model_path = output_dir / f"{gru_model_prefix}_model.pt"
+    gru_cal_path = output_dir / f"{gru_model_prefix}_calibrator.pkl"
+
+    if not all(p.exists() for p in [gru_val_X_path, gru_val_y_path, gru_metrics_path, gru_model_path]):
+        raise FileNotFoundError(
+            "Ensemble training requires sequence_val_X.npy, sequence_val_y.npy, "
+            f"{gru_model_prefix}_metrics.json, and {gru_model_prefix}_model.pt in output_dir."
+        )
+
+    with gru_metrics_path.open("r", encoding="utf-8") as fh:
+        gru_meta = json.load(fh)
+
+    arch = gru_meta.get("architecture", {})
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    gru_net = SequenceGRU(
+        input_size=int(gru_meta["input_size"]),
+        hidden_size=int(arch.get("hidden_size", 256)),
+        num_layers=int(arch.get("num_layers", 2)),
+        dropout=float(arch.get("dropout", 0.3)),
+        bidirectional=bool(arch.get("bidirectional", True)),
+    ).to(device)
+    gru_net.load_state_dict(torch.load(gru_model_path, map_location=device, weights_only=False))
+    gru_net.eval()
+
+    gru_calibrator = None
+    if gru_cal_path.exists():
+        with gru_cal_path.open("rb") as fh:
+            gru_calibrator = pickle.load(fh)
+
+    X_val_seq = np.load(gru_val_X_path, mmap_mode="r")
+    y_val_seq = np.load(gru_val_y_path, mmap_mode="r")
+
+    # GRU val set is patient-level; XGBoost val set is window-level.
+    # Use GRU patient-level y for ensemble evaluation — ensemble is patient-level.
+    gru_val_loader = build_sequence_loader(np.asarray(X_val_seq), np.asarray(y_val_seq), batch_size=256, shuffle=False)
+    _, gru_raw_val, gru_val_true = evaluate_sequence_model(gru_net, gru_val_loader, device)
+    gru_val_prob = gru_calibrator.predict(gru_raw_val) if gru_calibrator is not None else gru_raw_val
+
+    # The two val sets have different granularities (patient vs window).
+    # For the ensemble we use the GRU's patient-level labels and probabilities,
+    # and aggregate XGBoost window probabilities to patient level (mean of last
+    # 6 windows — mirrors inference-time behaviour).
+    val_df["xgb_prob"] = xgb_val_prob
+    xgb_patient_prob = (
+        val_df.sort_values("anchor_iculos")
+              .groupby("patient_id")["xgb_prob"]
+              .apply(lambda s: float(s.tail(6).mean()))
+    )
+
+    # Align on patient IDs from the GRU val set
+    gru_patient_ids = np.load(output_dir / "sequence_val_patient_ids.npy")
+    xgb_aligned = np.array([
+        float(xgb_patient_prob.get(pid, xgb_val_prob.mean()))
+        for pid in gru_patient_ids
+    ])
+
+    X_meta = np.column_stack([gru_val_prob, xgb_aligned])
+    y_meta = gru_val_true.astype(int)
+
+    meta = LogisticRegression(C=1.0, max_iter=1000, random_state=cfg.random_seed)
+    meta.fit(X_meta, y_meta)
+
+    meta_prob = meta.predict_proba(X_meta)[:, 1]
+    ensemble_auc  = float(roc_auc_score(y_meta, meta_prob)) if np.unique(y_meta).size > 1 else None
+    ensemble_auprc = float(average_precision_score(y_meta, meta_prob)) if np.unique(y_meta).size > 1 else None
+
+    logger.info(
+        "Ensemble meta-learner | val_auc=%.4f val_auprc=%.4f | coefs=[gru=%.3f xgb=%.3f] intercept=%.3f",
+        ensemble_auc or 0, ensemble_auprc or 0,
+        float(meta.coef_[0][0]), float(meta.coef_[0][1]), float(meta.intercept_[0]),
+    )
+
+    ensemble_path = output_dir / "ensemble_meta.pkl"
+    with ensemble_path.open("wb") as fh:
+        pickle.dump(meta, fh)
+
+    ensemble_metrics = {
+        "val_auc": ensemble_auc,
+        "val_auprc": ensemble_auprc,
+        "coef_gru": float(meta.coef_[0][0]),
+        "coef_xgb": float(meta.coef_[0][1]),
+        "intercept": float(meta.intercept_[0]),
+        "gru_val_auprc": float(average_precision_score(y_meta, gru_val_prob)) if np.unique(y_meta).size > 1 else None,
+        "xgb_val_auprc": float(average_precision_score(y_meta, xgb_aligned)) if np.unique(y_meta).size > 1 else None,
+    }
+    with (output_dir / "ensemble_metrics.json").open("w", encoding="utf-8") as fh:
+        json.dump(ensemble_metrics, fh, indent=2)
+
+    return ensemble_metrics
 
 
 def zscore_normalize(values: np.ndarray, stats: TrainStatistics, features: Sequence[str]) -> np.ndarray:
@@ -1390,6 +1572,19 @@ def run_pipeline(cfg: PipelineConfig) -> None:
                 "Resp GRU complete | test_auc=%.4f test_ap=%.4f",
                 resp_seq_metrics["test_metrics"]["auc"],
                 resp_seq_metrics["test_metrics"]["average_precision"],
+            )
+
+    # ── Ensemble meta-learner (optional) ─────────────────────────────────────
+    if cfg.train_ensemble:
+        if not cfg.train_sequence_model:
+            logger.warning("--train_ensemble requires --train_sequence_model to have run first.")
+        else:
+            logger.info("=== ENSEMBLE META-LEARNER ===")
+            ensemble_metrics = train_ensemble_model(cfg, output_dir)
+            logger.info(
+                "Ensemble complete | val_auc=%.4f val_auprc=%.4f",
+                ensemble_metrics.get("val_auc") or 0,
+                ensemble_metrics.get("val_auprc") or 0,
             )
 
 

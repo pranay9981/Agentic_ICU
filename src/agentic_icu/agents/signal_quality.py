@@ -14,21 +14,23 @@ _BOUNDS: dict[str, tuple[float, float]] = {
     "O2Sat": (50.0,  100.0),
 }
 
-# Features that go fully invalid vs. those that trigger soft suppression
 _HARD_BLOCK_FEATURES = {"HR", "Pulse", "SBP", "O2Sat"}
-_SOFT_SUPPRESS_FEATURES = {"DBP", "MAP", "Resp", "Temp"}
 
-_FLATLINE_MIN_ROWS = 5       # consecutive identical values → flatline
-_HR_JUMP_THRESHOLD = 40.0    # BPM change in one hour
-_SBP_DROP_THRESHOLD = 35.0   # mmHg drop with no HR response
-_SPO2_PARADOX_SPO2 = 80.0    # SpO2 below this …
+_FLATLINE_MIN_ROWS = 5         # consecutive identical values → flatline
+_TREND_WINDOW = 6              # rows used for window-based trend checks
+_HR_JUMP_THRESHOLD = 40.0      # BPM change in one hour
+_SBP_DROP_THRESHOLD = 35.0     # mmHg drop with no HR response
+_SPO2_PARADOX_SPO2 = 80.0      # SpO2 below this …
 _SPO2_PARADOX_HR_DELTA = 10.0  # … but HR barely moved (probe-off sign)
+_PERSISTENT_LOW_SPO2 = 85.0    # SpO2 threshold for multi-row probe-off check
 
 
 def _get(row: dict[str, float], *keys: str) -> float | None:
     for key in keys:
         value = row.get(key)
-        if value is not None and isinstance(value, (int, float)):
+        # Exclude bools — Python bool is a subtype of int; True/False as vitals
+        # would pass isinstance(value, (int, float)) and produce 0/1 bpm/mmHg.
+        if value is not None and not isinstance(value, bool) and isinstance(value, (int, float)):
             return float(value)
     return None
 
@@ -163,27 +165,32 @@ class SignalQualityAgent:
             ))
             return result, logs
 
-        # ── 7. SpO2/HR paradox (probe-off heuristic) ──────────────────────
-        if (
-            curr_spo2 is not None
-            and curr_spo2 < _SPO2_PARADOX_SPO2
-            and curr_hr is not None
-            and prev_hr is not None
-            and abs(curr_hr - prev_hr) < _SPO2_PARADOX_HR_DELTA
-        ):
-            result = SignalQualityResult(
-                signal_valid=True,
-                artifact_type="spo2_hr_paradox",
-                artifact_confidence=0.75,
-                suppression_recommendation=True,
-                artifact_affected_features=["O2Sat"],
-                suppression_mode="partial",
-            )
-            logs.append(AgentLogEntry(
-                agent="Signal Quality",
-                message=f"Soft suppression: SpO2 {curr_spo2:.0f}% critically low but HR stable — possible probe-off.",
-            ))
-            return result, logs
+        # ── 7. SpO2/HR paradox — window-based HR stability (probe-off heuristic) ──
+        if curr_spo2 is not None and curr_spo2 < _SPO2_PARADOX_SPO2 and curr_hr is not None:
+            n_check = min(_TREND_WINDOW, len(window_values))
+            recent_hrs = [_get(r, "HR", "Pulse") for r in window_values[-n_check:]]
+            valid_hrs = [v for v in recent_hrs if v is not None]
+            if len(valid_hrs) >= 2:
+                hr_stable = (max(valid_hrs) - min(valid_hrs)) < _SPO2_PARADOX_HR_DELTA * 2
+            else:
+                hr_stable = prev_hr is not None and abs(curr_hr - prev_hr) < _SPO2_PARADOX_HR_DELTA
+            if hr_stable:
+                result = SignalQualityResult(
+                    signal_valid=True,
+                    artifact_type="spo2_hr_paradox",
+                    artifact_confidence=0.75,
+                    suppression_recommendation=True,
+                    artifact_affected_features=["O2Sat"],
+                    suppression_mode="partial",
+                )
+                logs.append(AgentLogEntry(
+                    agent="Signal Quality",
+                    message=(
+                        f"Soft suppression: SpO2 {curr_spo2:.0f}% critically low but HR stable "
+                        f"over last {n_check} observations — possible probe-off."
+                    ),
+                ))
+                return result, logs
 
         # ── 8. Flatline detection (multi-feature) ─────────────────────────
         if len(window_values) >= _FLATLINE_MIN_ROWS:
@@ -211,6 +218,38 @@ class SignalQualityAgent:
                     message=f"{'Hard' if hard else 'Soft'} suppression: flatline detected in {', '.join(flatline_features)} over last {_FLATLINE_MIN_ROWS} rows.",
                 ))
                 return result, logs
+
+        # ── 9. Persistent critically low SpO2 with stable HR ─────────────────
+        # In a real ICU, unresolved SpO2 < 85% for 5+ hours with no HR response
+        # is almost certainly a probe-off artifact rather than true hypoxia.
+        if len(window_values) >= _FLATLINE_MIN_ROWS:
+            recent_spo2_rows = window_values[-_FLATLINE_MIN_ROWS:]
+            spo2_vals = [_get(r, "O2Sat") for r in recent_spo2_rows]
+            valid_spo2 = [v for v in spo2_vals if v is not None]
+            if (
+                len(valid_spo2) >= _FLATLINE_MIN_ROWS
+                and all(v < _PERSISTENT_LOW_SPO2 for v in valid_spo2)
+            ):
+                hr_vals = [_get(r, "HR", "Pulse") for r in recent_spo2_rows]
+                valid_hrs = [v for v in hr_vals if v is not None]
+                if len(valid_hrs) >= 2 and (max(valid_hrs) - min(valid_hrs)) < _SPO2_PARADOX_HR_DELTA * 2:
+                    result = SignalQualityResult(
+                        signal_valid=True,
+                        artifact_type="persistent_low_spo2",
+                        artifact_confidence=0.82,
+                        suppression_recommendation=True,
+                        artifact_affected_features=["O2Sat"],
+                        suppression_mode="partial",
+                    )
+                    logs.append(AgentLogEntry(
+                        agent="Signal Quality",
+                        message=(
+                            f"Soft suppression: SpO2 < {_PERSISTENT_LOW_SPO2:.0f}% "
+                            f"for {_FLATLINE_MIN_ROWS} consecutive rows with stable HR "
+                            f"— probable probe-off artifact."
+                        ),
+                    ))
+                    return result, logs
 
         # ── Soft range warnings for non-critical vitals ────────────────────
         soft_affected: list[str] = []
