@@ -14,6 +14,8 @@ _PROBABILITY_FIELDS = frozenset({
     "medium_alert_max_score_threshold",
     "resp_high_alert_threshold",
     "resp_medium_alert_threshold",
+    "high_alert_ensemble_score_threshold",
+    "medium_alert_ensemble_score_threshold",
 })
 
 from agentic_icu.domain.contracts import (
@@ -53,6 +55,8 @@ class AlertPolicy:
     resp_medium_alert_threshold: float | None = 0.55
     resp_high_alert_type: str = "Respiratory Failure Risk"
     partial_suppression_factor: float = 0.7
+    high_alert_ensemble_score_threshold: float | None = 0.80
+    medium_alert_ensemble_score_threshold: float | None = 0.55
 
     def __post_init__(self) -> None:
         for field_name in _PROBABILITY_FIELDS:
@@ -83,8 +87,13 @@ class ClinicalReasoner:
         lab_result: ModelAgentResult,
         max_score: float,
         mean_score: float,
+        ensemble_score: float | None = None,
     ) -> tuple[bool, str]:
         triggers: list[str] = []
+
+        ensemble_threshold = self.policy.high_alert_ensemble_score_threshold
+        if ensemble_score is not None and ensemble_threshold is not None and ensemble_score >= ensemble_threshold:
+            triggers.append(f"ensemble>={ensemble_threshold:.2f}")
 
         extreme_sequence = self.policy.high_alert_extreme_sequence_score_threshold
         if (
@@ -122,8 +131,13 @@ class ClinicalReasoner:
         vitals_result: ModelAgentResult,
         lab_result: ModelAgentResult,
         max_score: float,
+        ensemble_score: float | None = None,
     ) -> tuple[bool, str]:
         triggers: list[str] = []
+
+        ensemble_threshold = self.policy.medium_alert_ensemble_score_threshold
+        if ensemble_score is not None and ensemble_threshold is not None and ensemble_score >= ensemble_threshold:
+            triggers.append(f"ensemble>={ensemble_threshold:.2f}")
 
         sequence_threshold = self.policy.medium_alert_sequence_score_threshold
         if (
@@ -183,6 +197,7 @@ class ClinicalReasoner:
         vitals_result: ModelAgentResult,
         lab_result: ModelAgentResult,
         resp_result: ModelAgentResult | None = None,
+        ensemble_score: float | None = None,
     ) -> tuple[ClinicalDecision, list[AgentLogEntry], ModelAgentResult, ModelAgentResult, ModelAgentResult | None]:
         logs: list[AgentLogEntry] = []
 
@@ -218,11 +233,48 @@ class ClinicalReasoner:
                 ),
             ))
 
+        # Partial suppression also penalises ensemble score
+        if signal_quality.suppression_mode == "partial" and signal_quality.suppression_recommendation:
+            if ensemble_score is not None:
+                ensemble_score = ensemble_score * self.policy.partial_suppression_factor
+
         available_scores = [score for score in (vitals_result.score, lab_result.score) if score is not None]
 
         if not available_scores:
-            # Sepsis models have no score — check whether resp alone can fire an alert
-            # before falling back to "models unavailable".
+            # Sepsis models have no score — check ensemble, then resp, before giving up.
+            if ensemble_score is not None:
+                if (
+                    self.policy.high_alert_ensemble_score_threshold is not None
+                    and ensemble_score >= self.policy.high_alert_ensemble_score_threshold
+                ):
+                    decision = ClinicalDecision(
+                        alert_triggered=True,
+                        alert_type=self.policy.high_alert_type,
+                        priority=self.policy.high_alert_priority,
+                        rationale=(
+                            f"Ensemble risk elevated (score {ensemble_score:.3f} >= "
+                            f"{self.policy.high_alert_ensemble_score_threshold:.2f}). "
+                            "Sepsis models unavailable."
+                        ),
+                    )
+                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    return decision, logs, vitals_result, lab_result, resp_result
+                if (
+                    self.policy.medium_alert_ensemble_score_threshold is not None
+                    and ensemble_score >= self.policy.medium_alert_ensemble_score_threshold
+                ):
+                    decision = ClinicalDecision(
+                        alert_triggered=True,
+                        alert_type=self.policy.medium_alert_type,
+                        priority=self.policy.medium_alert_priority,
+                        rationale=(
+                            f"Ensemble risk elevated (score {ensemble_score:.3f}). "
+                            "Sepsis models unavailable."
+                        ),
+                    )
+                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    return decision, logs, vitals_result, lab_result, resp_result
+
             resp_score_lone = resp_result.score if resp_result is not None else None
             if resp_score_lone is not None:
                 if (
@@ -266,8 +318,8 @@ class ClinicalReasoner:
 
         max_score = max(available_scores)
         mean_score = sum(available_scores) / len(available_scores)
-        high_triggered, high_basis = self._high_alert_triggered(vitals_result, lab_result, max_score, mean_score)
-        medium_triggered, medium_basis = self._medium_alert_triggered(vitals_result, lab_result, max_score)
+        high_triggered, high_basis = self._high_alert_triggered(vitals_result, lab_result, max_score, mean_score, ensemble_score)
+        medium_triggered, medium_basis = self._medium_alert_triggered(vitals_result, lab_result, max_score, ensemble_score)
 
         rationale = self._compose_rationale(
             high_triggered=high_triggered,
@@ -338,6 +390,7 @@ class ClinicalReasoner:
         score_message = (
             f"Fusion scores: sequence={vitals_result.score if vitals_result.score is not None else 'n/a'}, "
             f"tabular={lab_result.score if lab_result.score is not None else 'n/a'}, "
+            f"ensemble={f'{ensemble_score:.3f}' if ensemble_score is not None else 'n/a'}, "
             f"resp={resp_score if resp_score is not None else 'n/a'}, "
             f"max={max_score:.3f}, mean={mean_score:.3f}."
         )

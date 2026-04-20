@@ -91,6 +91,8 @@ async def lifespan(app: FastAPI):
         workflow.lab_agent.predictor.load()
         if workflow.resp_failure_agent is not None:
             workflow.resp_failure_agent.gru_predictor.load()
+        if workflow.ensemble is not None:
+            workflow.ensemble.load()
         logger.info("Model warm-up complete.")
     except Exception as exc:
         logger.warning(
@@ -273,11 +275,14 @@ def runtime_config() -> dict:
     sequence_threshold = sequence_predictor.decision_threshold if sequence_predictor.available else None
     tabular_threshold = tabular_predictor.decision_threshold if tabular_predictor.available else None
 
+    ensemble_threshold = workflow.reasoner.policy.high_alert_ensemble_score_threshold
+
     return {
         "alert_policy": workflow.reasoner.policy.__dict__,
         "model_thresholds": {
             "sequence_threshold": sequence_threshold,
             "xgboost_threshold": tabular_threshold,
+            "ensemble_threshold": ensemble_threshold,
         },
     }
 
@@ -387,6 +392,7 @@ def model_metrics() -> dict:
         "sepsis_xgb": Path(settings.xgboost_metrics_path),
         "resp_gru":   Path(settings.resp_sequence_metrics_path),
         "resp_xgb":   Path(settings.resp_xgboost_metrics_path),
+        "ensemble":   Path(settings.ensemble_metrics_path),
     }
 
     def load_json(p: Path) -> dict:
@@ -438,6 +444,7 @@ def model_metrics() -> dict:
 
     raw = {k: load_json(p) for k, p in paths.items()}
 
+    ens = raw.get("ensemble", {})
     return {
         "sepsis_gru": {
             "name": "Sepsis GRU", "type": "sequence",
@@ -462,6 +469,17 @@ def model_metrics() -> dict:
             "metrics":       summary(raw["resp_xgb"], "1"),
             "feature_count": raw["resp_xgb"].get("feature_count", 0),
             "top_features":  top_features(raw["resp_xgb"]),
+        },
+        "ensemble": {
+            "name": "Sepsis Ensemble (GRU+XGB)", "type": "ensemble",
+            "metrics": {
+                "auc":               round(ens.get("val_auc", 0), 4),
+                "average_precision": round(ens.get("val_auprc", 0), 4),
+            },
+            "formula": "sigmoid(coef_gru * gru_score + coef_xgb * xgb_score + intercept)",
+            "coef_gru":   round(ens.get("coef_gru", 0), 4),
+            "coef_xgb":   round(ens.get("coef_xgb", 0), 4),
+            "intercept":  round(ens.get("intercept", 0), 4),
         },
     }
 

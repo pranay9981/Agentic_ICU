@@ -655,7 +655,7 @@ def train_xgboost_model(
     if cfg.use_smote:
         try:
             from imblearn.over_sampling import SMOTE  # type: ignore
-            smote = SMOTE(sampling_strategy=cfg.smote_sampling_strategy, random_state=cfg.random_seed, n_jobs=-1)
+            smote = SMOTE(sampling_strategy=cfg.smote_sampling_strategy, random_state=cfg.random_seed)
             X_train_sm, y_train_sm = smote.fit_resample(X_train.to_numpy(), y_train.to_numpy())
             logger.info(
                 "SMOTE applied: %d → %d training rows (pos rate %.3f → %.3f)",

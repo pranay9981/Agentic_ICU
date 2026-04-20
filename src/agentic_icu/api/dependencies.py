@@ -8,6 +8,7 @@ from agentic_icu.agents.signal_quality import SignalQualityAgent
 from agentic_icu.agents.tabular import LabTabularAgent
 from agentic_icu.agents.vitals import VitalsAgent
 from agentic_icu.config import settings
+from agentic_icu.inference.ensemble import EnsembleInference
 from agentic_icu.inference.explainer import TabularExplainer
 from agentic_icu.inference.sequence import SequenceInference
 from agentic_icu.inference.tabular import XGBoostInference
@@ -43,6 +44,10 @@ def get_workflow() -> AgenticICUWorkflow:
         calibrator_path=settings.resp_xgboost_calibrator_path,
     )
     alert_policy = AlertPolicy.from_dict(settings.load_alert_policy())
+    ensemble = EnsembleInference(
+        model_path=settings.ensemble_model_path,
+        metrics_path=settings.ensemble_metrics_path,
+    )
 
     return AgenticICUWorkflow(
         signal_quality_agent=SignalQualityAgent(),
@@ -50,4 +55,5 @@ def get_workflow() -> AgenticICUWorkflow:
         lab_agent=LabTabularAgent(preprocessor, tabular_predictor, explainer=tabular_explainer),
         resp_failure_agent=RespFailureAgent(preprocessor, resp_gru_predictor, resp_xgb_predictor),
         reasoner=ClinicalReasoner(policy=alert_policy),
+        ensemble=ensemble,
     )

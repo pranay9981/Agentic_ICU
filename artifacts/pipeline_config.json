@@ -1,6 +1,6 @@
 {
   "data_dir": "/kaggle/input/datasets/trex01/sepsis/raw",
-  "output_dir": "/kaggle/working",
+  "output_dir": "/kaggle/working/artifacts",
   "observation_hours": 24,
   "horizon_min_hours": 4,
   "horizon_max_hours": 8,
@@ -9,7 +9,7 @@
   "test_fraction": 0.15,
   "random_seed": 42,
   "max_patients": null,
-  "export_sequence_arrays": true,
+  "export_sequence_arrays": false,
   "train_sequence_model": true,
   "sequence_only": false,
   "sequence_hidden_size": 256,
@@ -23,10 +23,15 @@
   "sequence_focal_gamma": 2.0,
   "sequence_early_stopping_patience": 10,
   "patient_seq_max_hours": 72,
-  "xgb_num_boost_round": 2500,
-  "xgb_early_stopping_rounds": 100,
-  "xgb_max_depth": 6,
+  "xgb_num_boost_round": 3000,
+  "xgb_early_stopping_rounds": 200,
+  "xgb_max_depth": 5,
   "xgb_learning_rate": 0.03,
   "xgb_subsample": 0.8,
-  "xgb_colsample_bytree": 0.8
+  "xgb_colsample_bytree": 0.7,
+  "xgb_min_child_weight": 10,
+  "xgb_max_delta_step": 5,
+  "use_smote": true,
+  "smote_sampling_strategy": 0.3,
+  "train_ensemble": true
 }

@@ -680,6 +680,104 @@ class ApiIntegrationTests(unittest.TestCase):
         if va["score"] is not None and va["decision_threshold"]:
             self.assertAlmostEqual(va["threshold_ratio"], va["score"] / va["decision_threshold"], places=4)
 
+    def test_evaluate_ensemble_agent_in_response(self) -> None:
+        """ensemble_agent must appear in /evaluate response with status and score in [0,1]."""
+        payload = self.evaluate_patient("p000001")
+        self.assertIn("ensemble_agent", payload, "ensemble_agent field missing from /evaluate response")
+        ea = payload["ensemble_agent"]
+        self.assertIn("status", ea)
+        if ea["status"] == "available":
+            self.assertIsNotNone(ea["score"])
+            self.assertGreaterEqual(ea["score"], 0.0)
+            self.assertLessEqual(ea["score"], 1.0)
+            self.assertIn(ea["risk_band"], ("low", "moderate", "high"))
+
+    def test_ensemble_medium_alert_triggered_by_threshold(self) -> None:
+        """Ensemble score >= medium threshold must trigger a medium alert via the reasoner."""
+        from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner
+        from agentic_icu.domain.contracts import ModelAgentResult, SignalQualityResult
+
+        policy = AlertPolicy(
+            high_alert_ensemble_score_threshold=0.80,
+            medium_alert_ensemble_score_threshold=0.55,
+            high_alert_extreme_sequence_score_threshold=None,
+            high_alert_supported_sequence_score_threshold=None,
+            medium_alert_sequence_score_threshold=None,
+            medium_alert_tabular_score_threshold=None,
+        )
+        reasoner = ClinicalReasoner(policy)
+        sq = SignalQualityResult(signal_valid=True, suppression_recommendation=False, suppression_mode="none")
+        unavailable = ModelAgentResult(status="unavailable", detail="n/a")
+
+        decision, logs, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.70)
+        self.assertTrue(decision.alert_triggered)
+        self.assertIn("ensemble", decision.rationale.lower())
+
+    def test_ensemble_high_alert_triggered_by_threshold(self) -> None:
+        """Ensemble score >= high threshold must trigger a high alert."""
+        from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner
+        from agentic_icu.domain.contracts import ModelAgentResult, SignalQualityResult
+
+        policy = AlertPolicy(
+            high_alert_ensemble_score_threshold=0.80,
+            medium_alert_ensemble_score_threshold=0.55,
+            high_alert_extreme_sequence_score_threshold=None,
+            high_alert_supported_sequence_score_threshold=None,
+            medium_alert_sequence_score_threshold=None,
+            medium_alert_tabular_score_threshold=None,
+        )
+        reasoner = ClinicalReasoner(policy)
+        sq = SignalQualityResult(signal_valid=True, suppression_recommendation=False, suppression_mode="none")
+        unavailable = ModelAgentResult(status="unavailable", detail="n/a")
+
+        decision, logs, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.90)
+        self.assertTrue(decision.alert_triggered)
+        self.assertEqual(decision.priority, "high")
+        self.assertIn("ensemble", decision.rationale.lower())
+
+    def test_ensemble_partial_suppression_penalty(self) -> None:
+        """Partial suppression must apply 0.7x penalty to ensemble score before alert check."""
+        from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner
+        from agentic_icu.domain.contracts import ModelAgentResult, SignalQualityResult
+
+        policy = AlertPolicy(
+            partial_suppression_factor=0.7,
+            high_alert_ensemble_score_threshold=0.80,
+            medium_alert_ensemble_score_threshold=0.55,
+            high_alert_extreme_sequence_score_threshold=None,
+            high_alert_supported_sequence_score_threshold=None,
+            medium_alert_sequence_score_threshold=None,
+            medium_alert_tabular_score_threshold=None,
+        )
+        reasoner = ClinicalReasoner(policy)
+        sq = SignalQualityResult(
+            signal_valid=True, suppression_recommendation=True, suppression_mode="partial",
+            artifact_type="soft_range_violation", artifact_affected_features=["Temp"],
+        )
+        unavailable = ModelAgentResult(status="unavailable", detail="n/a")
+
+        # 0.90 * 0.7 = 0.63 → still >= 0.55 (medium), but < 0.80 (high)
+        decision, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.90)
+        self.assertTrue(decision.alert_triggered)
+        self.assertNotEqual(decision.priority, "high")  # penalty should drop it from high
+
+        # 0.70 * 0.7 = 0.49 → < 0.55, should NOT trigger
+        decision2, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.70)
+        self.assertFalse(decision2.alert_triggered)
+
+    def test_ensemble_metrics_in_model_metrics_endpoint(self) -> None:
+        """Ensemble must appear in /model-metrics with auc, auprc, and formula."""
+        response = self.client.get("/model-metrics")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIn("ensemble", body, "ensemble key missing from /model-metrics")
+        ens = body["ensemble"]
+        self.assertIn("metrics", ens)
+        self.assertIn("auc", ens["metrics"])
+        self.assertIn("average_precision", ens["metrics"])
+        self.assertIn("formula", ens)
+        self.assertGreater(ens["metrics"]["auc"], 0.0)
+
     def test_model_metrics_endpoint(self) -> None:
         """All four models must appear with valid AUC, AUPRC, and F1 values."""
         response = self.client.get("/model-metrics")

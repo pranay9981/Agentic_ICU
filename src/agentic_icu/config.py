@@ -86,6 +86,14 @@ class RuntimeSettings:
         "AGENTIC_ICU_RESP_XGB_CALIBRATOR",
         str(BASE_DIR / "artifacts" / "xgboost_resp_calibrator.pkl"),
     )
+    ensemble_model_path: str = os.getenv(
+        "AGENTIC_ICU_ENSEMBLE_MODEL",
+        str(BASE_DIR / "artifacts" / "ensemble_meta.pkl"),
+    )
+    ensemble_metrics_path: str = os.getenv(
+        "AGENTIC_ICU_ENSEMBLE_METRICS",
+        str(BASE_DIR / "artifacts" / "ensemble_metrics.json"),
+    )
 
     def load_alert_policy(self) -> Dict[str, Any]:
         path = Path(self.alert_policy_path)

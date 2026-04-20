@@ -25,5 +25,7 @@
   "resp_high_alert_threshold": 0.8,
   "resp_medium_alert_threshold": 0.55,
   "resp_high_alert_type": "Respiratory Failure Risk",
-  "partial_suppression_factor": 0.7
+  "partial_suppression_factor": 0.7,
+  "high_alert_ensemble_score_threshold": 0.80,
+  "medium_alert_ensemble_score_threshold": 0.55
 }

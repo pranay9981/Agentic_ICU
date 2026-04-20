@@ -68,6 +68,11 @@ class EvaluatePatientResponse(BaseModel):
     vitals_agent: ModelAgentResult
     lab_agent: ModelAgentResult
     resp_failure_agent: ModelAgentResult
+    ensemble_agent: ModelAgentResult = Field(
+        default_factory=lambda: ModelAgentResult(
+            status="unavailable", detail="Ensemble meta-learner not configured."
+        )
+    )
     clinical_decision: ClinicalDecision
     reasoning_log: List[AgentLogEntry] = Field(default_factory=list)
 
