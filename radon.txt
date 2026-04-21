@@ -1,0 +1,210 @@
+src\agentic_icu\config.py
+    C 14:0 RuntimeSettings - A
+    M 98:4 RuntimeSettings.load_alert_policy - A
+    M 103:4 RuntimeSettings.load_alert_policy_profiles - A
+src\agentic_icu\main.py
+    F 8:0 main - A
+src\agentic_icu\agents\reasoner.py
+    M 194:4 ClinicalReasoner.decide - F
+    M 84:4 ClinicalReasoner._high_alert_triggered - C
+    C 80:0 ClinicalReasoner - C
+    M 129:4 ClinicalReasoner._medium_alert_triggered - C
+    M 167:4 ClinicalReasoner._recompute_agent_result - B
+    M 409:4 ClinicalReasoner._compose_rationale - B
+    C 30:0 AlertPolicy - B
+    M 61:4 AlertPolicy.__post_init__ - A
+    M 75:4 AlertPolicy.from_dict - A
+    M 81:4 ClinicalReasoner.__init__ - A
+src\agentic_icu\agents\resp_failure.py
+    M 31:4 RespFailureAgent.evaluate - C
+    C 14:0 RespFailureAgent - B
+    M 21:4 RespFailureAgent.__init__ - A
+src\agentic_icu\agents\signal_quality.py
+    C 38:0 SignalQualityAgent - F
+    M 39:4 SignalQualityAgent.evaluate - F
+    F 28:0 _get - A
+src\agentic_icu\agents\tabular.py
+    M 25:4 LabTabularAgent.evaluate - C
+    C 14:0 LabTabularAgent - B
+    M 15:4 LabTabularAgent.__init__ - A
+src\agentic_icu\agents\vitals.py
+    M 17:4 VitalsAgent.evaluate - C
+    C 12:0 VitalsAgent - B
+    M 13:4 VitalsAgent.__init__ - A
+src\agentic_icu\api\dependencies.py
+    F 20:0 get_workflow - A
+src\agentic_icu\api\main.py
+    F 85:0 lifespan - C
+    F 315:0 demo_patient - C
+    F 493:0 explain_patient - C
+    F 143:0 _serializable_errors - B
+    F 194:0 _rate_limit - B
+    F 228:0 health - B
+    C 41:0 _ApiKeyMiddleware - B
+    F 369:0 search_patients - A
+    M 42:4 _ApiKeyMiddleware.dispatch - A
+    F 291:0 alert_policy_latest_report - A
+    F 270:0 runtime_config - A
+    F 351:0 list_demo_patients - A
+    C 54:0 _SecurityHeadersMiddleware - A
+    F 167:0 http_error_handler - A
+    F 214:0 latest_alert_policy_report_path - A
+    F 388:0 model_metrics - A
+    M 68:4 _SecurityHeadersMiddleware.dispatch - A
+    F 156:0 validation_error_handler - A
+    F 176:0 unhandled_error_handler - A
+    F 223:0 dashboard - A
+    F 488:0 evaluate_patient - A
+src\agentic_icu\domain\contracts.py
+    C 17:0 EvaluatePatientRequest - A
+    M 26:4 EvaluatePatientRequest.patient_id_not_empty - A
+    C 12:0 ObservationRecord - A
+    C 33:0 AgentLogEntry - A
+    C 38:0 SignalQualityResult - A
+    C 47:0 ModelAgentResult - A
+    C 58:0 ClinicalDecision - A
+    C 65:0 EvaluatePatientResponse - A
+    C 80:0 AgentExplanation - A
+    C 86:0 ExplainPatientResponse - A
+src\agentic_icu\inference\ensemble.py
+    M 58:4 EnsembleInference.predict - B
+    M 31:4 EnsembleInference.load - B
+    C 12:0 EnsembleInference - A
+    M 53:4 EnsembleInference.metrics - A
+    M 15:4 EnsembleInference.__init__ - A
+    M 23:4 EnsembleInference.available - A
+    M 27:4 EnsembleInference.loaded - A
+src\agentic_icu\inference\explainer.py
+    M 119:4 TabularExplainer.top_contributions - B
+    F 86:0 feature_label - A
+    C 98:0 TabularExplainer - A
+    M 151:4 TabularExplainer.format_explanation - A
+    M 110:4 TabularExplainer._ensure_loaded - A
+    M 105:4 TabularExplainer.__init__ - A
+src\agentic_icu\inference\sequence.py
+    M 70:4 SequenceInference.load - B
+    C 50:0 SequenceInference - A
+    M 115:4 SequenceInference.decision_threshold - A
+    M 141:4 SequenceInference.temporal_saliency - A
+    C 16:0 SequenceGRU - A
+    M 17:4 SequenceGRU.__init__ - A
+    M 51:4 SequenceInference.__init__ - A
+    M 109:4 SequenceInference.metrics - A
+    M 130:4 SequenceInference.predict - A
+    M 63:4 SequenceInference.available - A
+    M 44:4 SequenceGRU.forward - A
+    M 67:4 SequenceInference.loaded - A
+    M 127:4 SequenceInference.calibrated - A
+src\agentic_icu\inference\tabular.py
+    M 35:4 XGBoostInference.load - B
+    M 91:4 XGBoostInference.predict - B
+    C 15:0 XGBoostInference - A
+    M 72:4 XGBoostInference.decision_threshold - A
+    M 60:4 XGBoostInference.feature_columns - A
+    M 66:4 XGBoostInference.metrics - A
+    M 16:4 XGBoostInference.__init__ - A
+    M 28:4 XGBoostInference.available - A
+    M 86:4 XGBoostInference.model - A
+    M 32:4 XGBoostInference.loaded - A
+    M 82:4 XGBoostInference.calibrated - A
+src\agentic_icu\orchestration\workflow.py
+    M 34:4 AgenticICUWorkflow.evaluate - C
+    C 17:0 AgenticICUWorkflow - B
+    M 18:4 AgenticICUWorkflow.__init__ - A
+src\agentic_icu\preprocessing\windowing.py
+    M 33:4 RuntimePreprocessor.load - C
+    M 119:4 RuntimePreprocessor._add_composite_features - B
+    M 148:4 RuntimePreprocessor.build_tabular_features - A
+    M 188:4 RuntimePreprocessor.build_sequence_tensor - A
+    C 17:0 RuntimePreprocessor - A
+    M 91:4 RuntimePreprocessor.records_to_frame - A
+    M 70:4 RuntimePreprocessor.stats - A
+    M 76:4 RuntimePreprocessor.pipeline_config - A
+    M 30:4 RuntimePreprocessor.available - A
+    M 110:4 RuntimePreprocessor._slope_6h - A
+    M 18:4 RuntimePreprocessor.__init__ - A
+    M 82:4 RuntimePreprocessor.observation_hours - A
+    M 87:4 RuntimePreprocessor.sequence_hours - A
+    M 102:4 RuntimePreprocessor._prepare - A
+src\agentic_icu\tools\evaluate_alert_policy.py
+    F 51:0 load_patient_window - C
+    F 122:0 summarize_policy - B
+    F 281:0 main - A
+    F 87:0 collect_cases - A
+    F 247:0 build_markdown_report - A
+    F 274:0 maybe_write_reports - A
+    F 47:0 safe_ratio - A
+    F 113:0 decide_case - A
+    F 22:0 parse_args - A
+    F 81:0 merge_policy - A
+    F 211:0 ensure_parent_dir - A
+    F 217:0 write_json_report - A
+    F 222:0 markdown_profile_block - A
+    F 269:0 write_markdown_report - A
+src\rebuild_training\kaggle_train_deterioration.py
+    F 1432:0 run_pipeline - D
+    F 751:0 train_ensemble_model - C
+    F 379:0 build_resp_failure_onset_index - C
+    F 1230:0 train_sequence_model - C
+    F 448:0 build_tabular_records_for_patient - B
+    F 328:0 fit_train_statistics - B
+    M 1141:4 SequenceGRU._init_weights - B
+    F 625:0 train_xgboost_model - B
+    F 269:0 build_manifest - A
+    F 365:0 classify_anchor - A
+    C 1120:0 SequenceGRU - A
+    F 247:0 discover_patient_files - A
+    F 292:0 stratified_patient_split - A
+    F 433:0 _to_onset_int - A
+    F 549:0 build_tabular_dataset - A
+    F 585:0 safe_average_precision - A
+    F 935:0 export_sequence_arrays - A
+    F 985:0 build_patient_level_sequence - A
+    F 1046:0 export_patient_sequences - A
+    F 1202:0 resolve_sequence_training_device - A
+    F 575:0 get_xgb_feature_columns - A
+    F 592:0 choose_threshold_from_validation - A
+    F 891:0 zscore_normalize - A
+    F 897:0 build_sequence_arrays_for_patient - A
+    M 1121:4 SequenceGRU.__init__ - A
+    F 189:0 set_random_seed - A
+    F 259:0 read_patient_frame - A
+    F 579:0 safe_auc - A
+    F 1160:0 build_sequence_loader - A
+    F 1175:0 evaluate_sequence_model - A
+    C 1098:0 FocalLoss - A
+    F 197:0 parse_args - A
+    F 241:0 ensure_output_dir - A
+    F 321:0 causal_prepare_patient_frame - A
+    F 357:0 apply_causal_imputation - A
+    F 361:0 apply_static_fill - A
+    F 613:0 score_predictions - A
+    F 1410:0 save_statistics - A
+    F 1415:0 save_manifest - A
+    F 1419:0 save_tabular_dataset - A
+    F 1423:0 summarize_split - A
+    C 132:0 PipelineConfig - A
+    C 171:0 PatientMeta - A
+    C 182:0 TrainStatistics - A
+    M 1106:4 FocalLoss.__init__ - A
+    M 1111:4 FocalLoss.forward - A
+    M 1154:4 SequenceGRU.forward - A
+src\rebuild_training\resp_failure_proxy_analysis.py
+    F 136:0 analyse - E
+    F 28:0 proxy_tier1 - B
+    F 47:0 proxy_tier2 - B
+    F 82:0 parse_psv - A
+    F 122:0 lookahead_label - A
+    F 111:0 sustained_flag - A
+    F 69:0 proxy_combined - A
+    F 101:0 carry_forward - A
+src\rebuild_training\resp_failure_threshold_sweep.py
+    F 80:0 analyse - F
+    F 27:0 parse_psv - A
+    F 62:0 lookahead_label - A
+    F 53:0 sustained_flag - A
+    F 44:0 carry_forward - A
+    F 73:0 count_positive - A
+
+187 blocks (classes, functions, methods) analyzed.
+Average complexity: B (5.3689839572192515)

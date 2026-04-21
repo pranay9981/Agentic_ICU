@@ -4,7 +4,7 @@ import threading
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 import pandas as pd
-import shap
+import shap  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
     from agentic_icu.inference.tabular import XGBoostInference
@@ -92,7 +92,9 @@ def feature_label(raw_name: str) -> str:
             base = raw_name[: -len(suffix)]
             base_label = _BASE_LABELS.get(base, base.replace("_", " ").title())
             return f"{base_label} {suffix_label}"
-    return _BASE_LABELS.get(raw_name, raw_name.replace("__", " ").replace("_", " ").title())
+    return _BASE_LABELS.get(
+        raw_name, raw_name.replace("__", " ").replace("_", " ").title()
+    )
 
 
 class TabularExplainer:
@@ -128,15 +130,23 @@ class TabularExplainer:
             all_contributions: dict mapping every feature to its SHAP value
         """
         self._ensure_loaded()
+        if self._explainer is None:
+            raise RuntimeError("TabularExplainer._ensure_loaded() did not initialise the explainer.")
         cols = self._inference.feature_columns
         X = pd.DataFrame([[features.get(col, 0.0) for col in cols]], columns=cols)
-        raw_shap = self._explainer.shap_values(X)
+        # shap.TreeExplainer.shap_values() is not thread-safe — serialise calls.
+        with self._lock:
+            raw_shap = self._explainer.shap_values(X)
+        if not hasattr(raw_shap, "ndim"):
+            raise TypeError(f"shap_values() returned unexpected type: {type(raw_shap)}")
         # shap_values() on a binary Booster returns a 2-D array (1, n_features)
         shap_row = raw_shap[0] if raw_shap.ndim == 2 else raw_shap
         all_contributions: Dict[str, float] = {
             col: float(shap_row[i]) for i, col in enumerate(cols)
         }
-        top_items = sorted(all_contributions.items(), key=lambda kv: abs(kv[1]), reverse=True)[:n]
+        top_items = sorted(
+            all_contributions.items(), key=lambda kv: abs(kv[1]), reverse=True
+        )[:n]
         top_list = [
             {
                 "feature": feat,

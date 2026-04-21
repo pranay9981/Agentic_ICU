@@ -52,8 +52,12 @@ def get_workflow() -> AgenticICUWorkflow:
     return AgenticICUWorkflow(
         signal_quality_agent=SignalQualityAgent(),
         vitals_agent=VitalsAgent(preprocessor, vitals_predictor),
-        lab_agent=LabTabularAgent(preprocessor, tabular_predictor, explainer=tabular_explainer),
-        resp_failure_agent=RespFailureAgent(preprocessor, resp_gru_predictor, resp_xgb_predictor),
+        lab_agent=LabTabularAgent(
+            preprocessor, tabular_predictor, explainer=tabular_explainer
+        ),
+        resp_failure_agent=RespFailureAgent(
+            preprocessor, resp_gru_predictor, resp_xgb_predictor
+        ),
         reasoner=ClinicalReasoner(policy=alert_policy),
         ensemble=ensemble,
     )

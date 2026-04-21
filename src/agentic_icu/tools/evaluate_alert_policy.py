@@ -13,20 +13,37 @@ SRC_ROOT = Path(__file__).resolve().parents[2]
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner
-from agentic_icu.api.dependencies import get_workflow
-from agentic_icu.config import settings
-from agentic_icu.domain.contracts import EvaluatePatientRequest, ModelAgentResult, ObservationRecord, SignalQualityResult
+from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner  # noqa: E402
+from agentic_icu.api.dependencies import get_workflow  # noqa: E402
+from agentic_icu.config import settings  # noqa: E402
+from agentic_icu.domain.contracts import (  # noqa: E402
+    EvaluatePatientRequest,
+    ModelAgentResult,
+    ObservationRecord,
+    SignalQualityResult,
+)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate alert policy behavior on local patient data.")
-    parser.add_argument("--max-patients", type=int, default=100, help="Maximum number of local PSV files to scan.")
-    parser.add_argument("--observation-rows", type=int, default=24, help="Rows per patient window to feed into runtime evaluation.")
+    parser = argparse.ArgumentParser(
+        description="Evaluate alert policy behavior on local patient data."
+    )
+    parser.add_argument(
+        "--max-patients",
+        type=int,
+        default=100,
+        help="Maximum number of local PSV files to scan.",
+    )
+    parser.add_argument(
+        "--observation-rows",
+        type=int,
+        default=24,
+        help="Rows per patient window to feed into runtime evaluation.",
+    )
     parser.add_argument(
         "--profile",
         default="active",
-        help="Policy profile to evaluate. Use 'active' for the runtime policy or a name from the policy profile catalog.",
+        help="Policy profile to evaluate. Use 'active' for the runtime policy or a name from the policy profile catalog.",  # noqa: E501
     )
     parser.add_argument(
         "--compare-profiles",
@@ -48,7 +65,9 @@ def safe_ratio(numerator: int | float, denominator: int | float) -> float:
     return (numerator / denominator) if denominator else 0.0
 
 
-def load_patient_window(path: Path, max_rows: int) -> tuple[list[ObservationRecord], int]:
+def load_patient_window(
+    path: Path, max_rows: int
+) -> tuple[list[ObservationRecord], int]:
     records: list[ObservationRecord] = []
     ever_sepsis = 0
 
@@ -56,7 +75,7 @@ def load_patient_window(path: Path, max_rows: int) -> tuple[list[ObservationReco
         reader = csv.DictReader(handle, delimiter="|")
         for index, row in enumerate(reader):
             label = row.get("SepsisLabel")
-            if label not in (None, ""):
+            if label is not None and label != "":
                 numeric_label = float(label)
                 if math.isfinite(numeric_label) and numeric_label >= 1.0:
                     ever_sepsis = 1
@@ -78,13 +97,18 @@ def load_patient_window(path: Path, max_rows: int) -> tuple[list[ObservationReco
     return records, ever_sepsis
 
 
-def merge_policy(base_policy: Dict[str, Any], overrides: Dict[str, Any]) -> Dict[str, Any]:
-    merged = dict(base_policy)
-    merged.update(overrides)
-    return merged
+def merge_policy(
+    base_policy: AlertPolicy, overrides: Dict[str, Any]
+) -> AlertPolicy:
+    """Merge overrides into a policy dataclass."""
+    data = base_policy.__dict__.copy()
+    data.update(overrides)
+    return AlertPolicy(**data)
 
 
-def collect_cases(max_patients: int, observation_rows: int) -> tuple[list[Dict[str, Any]], Dict[str, Any]]:
+def collect_cases(
+    max_patients: int, observation_rows: int
+) -> tuple[list[Dict[str, Any]], Dict[str, Any]]:
     get_workflow.cache_clear()
     workflow = get_workflow()
     raw_dir = Path(settings.raw_data_dir)
@@ -95,7 +119,9 @@ def collect_cases(max_patients: int, observation_rows: int) -> tuple[list[Dict[s
         if not records:
             continue
 
-        request = EvaluatePatientRequest(patient_id=path.stem, observation_window=records)
+        request = EvaluatePatientRequest(
+            patient_id=path.stem, observation_window=records
+        )
         response = workflow.evaluate(request)
         cases.append(
             {
@@ -104,22 +130,37 @@ def collect_cases(max_patients: int, observation_rows: int) -> tuple[list[Dict[s
                 "signal_quality": response.signal_quality.model_dump(),
                 "vitals_agent": response.vitals_agent.model_dump(),
                 "lab_agent": response.lab_agent.model_dump(),
+                "ensemble_score": response.ensemble_agent.score if response.ensemble_agent.status == "available" else None,
             }
         )
 
     return cases, workflow.reasoner.policy.__dict__
 
 
-def decide_case(case: Dict[str, Any], policy: Dict[str, Any]) -> tuple[bool, str, str]:
-    reasoner = ClinicalReasoner(policy=AlertPolicy.from_dict(policy))
+def decide_case(case: Dict[str, Any], policy: Any) -> tuple[bool, str, str]:
+    if isinstance(policy, dict):
+        p_obj = AlertPolicy.from_dict(policy)
+    else:
+        p_obj = policy
+    reasoner = ClinicalReasoner(policy=p_obj)
     signal_quality = SignalQualityResult(**case["signal_quality"])
     vitals_result = ModelAgentResult(**case["vitals_agent"])
     lab_result = ModelAgentResult(**case["lab_agent"])
-    decision, _ = reasoner.decide(signal_quality, vitals_result, lab_result)
+    decision, *_ = reasoner.decide(
+        signal_quality, vitals_result, lab_result,
+        ensemble_score=case.get("ensemble_score")
+    )
     return decision.alert_triggered, decision.alert_type or "Unknown", decision.priority
 
 
-def summarize_policy(policy_name: str, policy: Dict[str, Any], cases: list[Dict[str, Any]]) -> Dict[str, Any]:
+def summarize_policy(
+    policy_name: str, policy: Any, cases: list[Dict[str, Any]]
+) -> Dict[str, Any]:
+    if isinstance(policy, dict):
+        p_obj = AlertPolicy.from_dict(policy)
+    else:
+        p_obj = policy
+
     alert_counter: Counter[str] = Counter()
     priority_counter: Counter[str] = Counter()
     total = len(cases)
@@ -131,17 +172,17 @@ def summarize_policy(policy_name: str, policy: Dict[str, Any], cases: list[Dict[
     false_negative = 0
     high_alerts = 0
     suppressed_artifacts = 0
-    sample_alerts = []
+    sample_alerts: list[Dict[str, Any]] = []
 
     for case in cases:
         triggered, alert_type, priority = decide_case(case, policy)
         alert_counter[alert_type] += 1
         priority_counter[priority] += 1
 
-        if alert_type == policy["suppressed_artifact_alert_type"]:
+        if alert_type == p_obj.suppressed_artifact_alert_type:
             suppressed_artifacts += 1
 
-        if triggered and priority == policy["high_alert_priority"]:
+        if triggered and priority == p_obj.high_alert_priority:
             high_alerts += 1
 
         if triggered:
@@ -170,7 +211,9 @@ def summarize_policy(policy_name: str, policy: Dict[str, Any], cases: list[Dict[
     precision = safe_ratio(true_positive, true_positive + false_positive)
     recall = safe_ratio(true_positive, positives)
     specificity = safe_ratio(true_negative, negatives)
-    negative_predictive_value = safe_ratio(true_negative, true_negative + false_negative)
+    negative_predictive_value = safe_ratio(
+        true_negative, true_negative + false_negative
+    )
     false_positive_rate = safe_ratio(false_positive, negatives)
     false_negative_rate = safe_ratio(false_negative, positives)
     f1 = safe_ratio(2 * precision * recall, precision + recall)
@@ -257,13 +300,16 @@ def build_markdown_report(payload: Dict[str, Any]) -> str:
             lines.append(markdown_profile_block(profile))
         return "\n".join(lines).strip() + "\n"
 
-    return "\n".join(
-        [
-            "# Alert Policy Evaluation Report",
-            "",
-            markdown_profile_block(payload),
-        ]
-    ).strip() + "\n"
+    return (
+        "\n".join(
+            [
+                "# Alert Policy Evaluation Report",
+                "",
+                markdown_profile_block(payload),
+            ]
+        ).strip()
+        + "\n"
+    )
 
 
 def write_markdown_report(path_str: str, payload: Dict[str, Any]) -> None:
@@ -284,10 +330,13 @@ def main() -> None:
     profiles = settings.load_alert_policy_profiles()
 
     if args.compare_profiles:
-        profile_summaries = [summarize_policy("active", active_policy, cases)]
+        active_policy_obj = AlertPolicy.from_dict(active_policy) if isinstance(active_policy, dict) else active_policy
+        profile_summaries = [summarize_policy("active", active_policy_obj, cases)]
         for profile_name, overrides in profiles.items():
-            merged_policy = merge_policy(active_policy, overrides)
-            profile_summaries.append(summarize_policy(profile_name, merged_policy, cases))
+            merged_policy = merge_policy(active_policy_obj, overrides)
+            profile_summaries.append(
+                summarize_policy(profile_name, merged_policy, cases)
+            )
 
         payload = {
             "patients_evaluated": len(cases),
@@ -299,16 +348,20 @@ def main() -> None:
         return
 
     if args.profile == "active":
-        payload = summarize_policy("active", active_policy, cases)
+        active_policy_obj = AlertPolicy.from_dict(active_policy) if isinstance(active_policy, dict) else active_policy
+        payload = summarize_policy("active", active_policy_obj, cases)
         maybe_write_reports(args, payload)
         print(json.dumps(payload, indent=2))
         return
 
     if args.profile not in profiles:
         available_profiles = ", ".join(sorted(profiles))
-        raise SystemExit(f"Unknown profile '{args.profile}'. Available profiles: active, {available_profiles}")
+        raise SystemExit(
+            f"Unknown profile '{args.profile}'. Available profiles: active, {available_profiles}"
+        )
 
-    selected_policy = merge_policy(active_policy, profiles[args.profile])
+    active_policy_obj = AlertPolicy.from_dict(active_policy) if isinstance(active_policy, dict) else active_policy
+    selected_policy = merge_policy(active_policy_obj, profiles[args.profile])
     payload = summarize_policy(args.profile, selected_policy, cases)
     maybe_write_reports(args, payload)
     print(json.dumps(payload, indent=2))

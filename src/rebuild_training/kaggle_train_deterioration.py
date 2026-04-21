@@ -34,7 +34,7 @@ import logging
 import math
 import pickle
 import random
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -43,17 +43,16 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import xgboost as xgb
-from sklearn.isotonic import IsotonicRegression
-from sklearn.metrics import (
+from sklearn.isotonic import IsotonicRegression  # type: ignore[import-untyped]
+from sklearn.metrics import (  # type: ignore[import-untyped]
     average_precision_score,
     brier_score_loss,
     classification_report,
     precision_recall_curve,
     roc_auc_score,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split  # type: ignore[import-untyped]
 from torch.utils.data import DataLoader, TensorDataset
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -135,7 +134,7 @@ class PipelineConfig:
     observation_hours: int = 24
     horizon_min_hours: int = 4
     horizon_max_hours: int = 8
-    train_resp_failure: bool = False   # Phase 6: second pass with SF-ratio proxy label
+    train_resp_failure: bool = False  # Phase 6: second pass with SF-ratio proxy label
     val_fraction: float = 0.15
     test_fraction: float = 0.15
     random_seed: int = 42
@@ -153,7 +152,7 @@ class PipelineConfig:
     sequence_focal_alpha: float = 0.75
     sequence_focal_gamma: float = 2.0
     sequence_early_stopping_patience: int = 10
-    patient_seq_max_hours: int = 72   # max ICU hours used per patient for GRU training
+    patient_seq_max_hours: int = 72  # max ICU hours used per patient for GRU training
     xgb_num_boost_round: int = 3000
     xgb_early_stopping_rounds: int = 200
     xgb_max_depth: int = 5
@@ -195,20 +194,66 @@ def set_random_seed(seed: int) -> None:
 
 
 def parse_args() -> PipelineConfig:
-    parser = argparse.ArgumentParser(description="Train leakage-safe ICU deterioration models from scratch.")
-    parser.add_argument("--data_dir", required=True, help="Directory containing patient PSV files.")
-    parser.add_argument("--output_dir", required=True, help="Directory where artifacts will be written.")
-    parser.add_argument("--observation_hours", type=int, default=24, help="Causal history length used for each prediction window.")
-    parser.add_argument("--horizon_min_hours", type=int, default=4, help="Minimum lead time for positive labels.")
-    parser.add_argument("--horizon_max_hours", type=int, default=6, help="Maximum lead time for positive labels.")
-    parser.add_argument("--val_fraction", type=float, default=0.15, help="Validation patient fraction.")
-    parser.add_argument("--test_fraction", type=float, default=0.15, help="Test patient fraction.")
-    parser.add_argument("--random_seed", type=int, default=42, help="Global seed for reproducibility.")
-    parser.add_argument("--max_patients", type=int, default=None, help="Optional cap for smoke tests.")
-    parser.add_argument("--export_sequence_arrays", action="store_true", help="Export causal sequence arrays for a later neural model.")
-    parser.add_argument("--train_sequence_model", action="store_true", help="Train the GRU sequence model after exporting arrays.")
-    parser.add_argument("--sequence_only", action="store_true", help="Skip dataset rebuilding and train the GRU only from previously exported sequence arrays.")
-    parser.add_argument("--train_resp_failure", action="store_true", default=False, help="Phase 6: also train respiratory failure models using the SF-ratio proxy label.")
+    parser = argparse.ArgumentParser(
+        description="Train leakage-safe ICU deterioration models from scratch."
+    )
+    parser.add_argument(
+        "--data_dir", required=True, help="Directory containing patient PSV files."
+    )
+    parser.add_argument(
+        "--output_dir", required=True, help="Directory where artifacts will be written."
+    )
+    parser.add_argument(
+        "--observation_hours",
+        type=int,
+        default=24,
+        help="Causal history length used for each prediction window.",
+    )
+    parser.add_argument(
+        "--horizon_min_hours",
+        type=int,
+        default=4,
+        help="Minimum lead time for positive labels.",
+    )
+    parser.add_argument(
+        "--horizon_max_hours",
+        type=int,
+        default=6,
+        help="Maximum lead time for positive labels.",
+    )
+    parser.add_argument(
+        "--val_fraction", type=float, default=0.15, help="Validation patient fraction."
+    )
+    parser.add_argument(
+        "--test_fraction", type=float, default=0.15, help="Test patient fraction."
+    )
+    parser.add_argument(
+        "--random_seed", type=int, default=42, help="Global seed for reproducibility."
+    )
+    parser.add_argument(
+        "--max_patients", type=int, default=None, help="Optional cap for smoke tests."
+    )
+    parser.add_argument(
+        "--export_sequence_arrays",
+        action="store_true",
+        help="Export causal sequence arrays for a later neural model.",
+    )
+    parser.add_argument(
+        "--train_sequence_model",
+        action="store_true",
+        help="Train the GRU sequence model after exporting arrays.",
+    )
+    parser.add_argument(
+        "--sequence_only",
+        action="store_true",
+        help="Skip dataset rebuilding and train the GRU only from previously exported sequence arrays.",
+    )
+    parser.add_argument(
+        "--train_resp_failure",
+        action="store_true",
+        default=False,
+        help="Phase 6: also train respiratory failure models using the SF-ratio proxy label.",
+    )
     parser.add_argument("--sequence_hidden_size", type=int, default=256)
     parser.add_argument("--sequence_layers", type=int, default=2)
     parser.add_argument("--sequence_dropout", type=float, default=0.3)
@@ -219,7 +264,12 @@ def parse_args() -> PipelineConfig:
     parser.add_argument("--sequence_focal_alpha", type=float, default=0.75)
     parser.add_argument("--sequence_focal_gamma", type=float, default=2.0)
     parser.add_argument("--sequence_early_stopping_patience", type=int, default=10)
-    parser.add_argument("--patient_seq_max_hours", type=int, default=72, help="Max ICU hours per patient sequence for GRU training.")
+    parser.add_argument(
+        "--patient_seq_max_hours",
+        type=int,
+        default=72,
+        help="Max ICU hours per patient sequence for GRU training.",
+    )
     parser.add_argument("--xgb_num_boost_round", type=int, default=3000)
     parser.add_argument("--xgb_early_stopping_rounds", type=int, default=200)
     parser.add_argument("--xgb_max_depth", type=int, default=5)
@@ -228,12 +278,24 @@ def parse_args() -> PipelineConfig:
     parser.add_argument("--xgb_colsample_bytree", type=float, default=0.7)
     parser.add_argument("--xgb_min_child_weight", type=int, default=10)
     parser.add_argument("--xgb_max_delta_step", type=int, default=5)
-    parser.add_argument("--use_smote", action="store_true", default=False,
-                        help="Apply SMOTE oversampling to the XGBoost training set (requires imbalanced-learn).")
-    parser.add_argument("--smote_sampling_strategy", type=float, default=0.3,
-                        help="SMOTE target minority/majority ratio (0.3 = 30%% positives).")
-    parser.add_argument("--train_ensemble", action="store_true", default=False,
-                        help="Train a logistic-regression meta-learner on GRU + XGBoost calibrated val probabilities.")
+    parser.add_argument(
+        "--use_smote",
+        action="store_true",
+        default=False,
+        help="Apply SMOTE oversampling to the XGBoost training set (requires imbalanced-learn).",
+    )
+    parser.add_argument(
+        "--smote_sampling_strategy",
+        type=float,
+        default=0.3,
+        help="SMOTE target minority/majority ratio (0.3 = 30%% positives).",
+    )
+    parser.add_argument(
+        "--train_ensemble",
+        action="store_true",
+        default=False,
+        help="Train a logistic-regression meta-learner on GRU + XGBoost calibrated val probabilities.",
+    )
     args = parser.parse_args()
     return PipelineConfig(**vars(args))
 
@@ -289,7 +351,9 @@ def build_manifest(paths: Sequence[Path]) -> pd.DataFrame:
     return pd.DataFrame([asdict(row) for row in rows])
 
 
-def stratified_patient_split(manifest: pd.DataFrame, cfg: PipelineConfig) -> pd.DataFrame:
+def stratified_patient_split(
+    manifest: pd.DataFrame, cfg: PipelineConfig
+) -> pd.DataFrame:
     patient_ids = manifest["patient_id"]
     labels = manifest["ever_sepsis"]
     train_val_ids, test_ids = train_test_split(
@@ -318,7 +382,9 @@ def stratified_patient_split(manifest: pd.DataFrame, cfg: PipelineConfig) -> pd.
     return out
 
 
-def causal_prepare_patient_frame(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def causal_prepare_patient_frame(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     raw_dynamic = df[DYNAMIC_FEATURES].copy()
     dynamic_ffill = raw_dynamic.ffill()
     static = df[STATIC_FEATURES].copy().ffill().bfill()
@@ -331,7 +397,9 @@ def fit_train_statistics(train_paths: Sequence[Path]) -> TrainStatistics:
 
     for idx, path in enumerate(train_paths, start=1):
         if idx % 1000 == 0:
-            logger.info("Fitting statistics: %s / %s training patients", idx, len(train_paths))
+            logger.info(
+                "Fitting statistics: %s / %s training patients", idx, len(train_paths)
+            )
         df = read_patient_frame(path)
         _, dynamic_ffill, static = causal_prepare_patient_frame(df)
         dynamic_blocks.append(dynamic_ffill)
@@ -343,18 +411,22 @@ def fit_train_statistics(train_paths: Sequence[Path]) -> TrainStatistics:
     fill_medians = dynamic_df.median(numeric_only=True).to_dict()
     dynamic_filled = dynamic_df.fillna(fill_medians)
     value_means = dynamic_filled.mean(numeric_only=True).to_dict()
-    value_stds = dynamic_filled.std(numeric_only=True).replace(0, 1.0).fillna(1.0).to_dict()
+    value_stds = (
+        dynamic_filled.std(numeric_only=True).replace(0, 1.0).fillna(1.0).to_dict()
+    )
     static_fill_values = static_df.median(numeric_only=True).to_dict()
 
     return TrainStatistics(
-        fill_medians={k: float(v) for k, v in fill_medians.items()},
-        value_means={k: float(v) for k, v in value_means.items()},
-        value_stds={k: float(v) for k, v in value_stds.items()},
-        static_fill_values={k: float(v) for k, v in static_fill_values.items()},
+        fill_medians={str(k): float(v) for k, v in fill_medians.items()},
+        value_means={str(k): float(v) for k, v in value_means.items()},
+        value_stds={str(k): float(v) for k, v in value_stds.items()},
+        static_fill_values={str(k): float(v) for k, v in static_fill_values.items()},
     )
 
 
-def apply_causal_imputation(dynamic_ffill: pd.DataFrame, stats: TrainStatistics) -> pd.DataFrame:
+def apply_causal_imputation(
+    dynamic_ffill: pd.DataFrame, stats: TrainStatistics
+) -> pd.DataFrame:
     return dynamic_ffill.fillna(stats.fill_medians)
 
 
@@ -362,7 +434,9 @@ def apply_static_fill(static_df: pd.DataFrame, stats: TrainStatistics) -> pd.Dat
     return static_df.fillna(stats.static_fill_values)
 
 
-def classify_anchor(onset_index: Optional[int], anchor_index: int, cfg: PipelineConfig) -> Optional[int]:
+def classify_anchor(
+    onset_index: Optional[int], anchor_index: int, cfg: PipelineConfig
+) -> Optional[int]:
     if onset_index is None:
         return 0
     if anchor_index >= onset_index:
@@ -391,7 +465,7 @@ def build_resp_failure_onset_index(df: pd.DataFrame) -> Optional[int]:
     imaging, and prepare for intubation while remaining achievable for the model.
     """
     o2sat = df["O2Sat"].to_numpy(dtype=np.float64)
-    fio2  = df["FiO2"].to_numpy(dtype=np.float64)
+    fio2 = df["FiO2"].to_numpy(dtype=np.float64)
     n = len(df)
 
     # Forward-fill O2Sat and FiO2 so isolated missing rows don't break the run
@@ -412,7 +486,8 @@ def build_resp_failure_onset_index(df: pd.DataFrame) -> Optional[int]:
     sustained = [False] * n
     run = 0
     for i in range(n):
-        if sf_vals[i] is not None and sf_vals[i] < RESP_SF_THRESHOLD:
+        sf = sf_vals[i]
+        if sf is not None and sf < RESP_SF_THRESHOLD:
             run += 1
         else:
             run = 0
@@ -485,7 +560,11 @@ def build_tabular_records_for_patient(
             total_missing += int((1.0 - observed_mask).sum())
 
             observed_positions = np.where(observed_mask > 0)[0]
-            hours_since_seen = float(len(values) - 1 - observed_positions[-1]) if len(observed_positions) else float(len(values))
+            hours_since_seen = (
+                float(len(values) - 1 - observed_positions[-1])
+                if len(observed_positions)
+                else float(len(values))
+            )
 
             row[f"{feature}__last"] = float(values[-1])
             row[f"{feature}__mean"] = float(values.mean())
@@ -496,7 +575,9 @@ def build_tabular_records_for_patient(
             row[f"{feature}__obs_frac"] = float(observed_mask.mean())
             row[f"{feature}__hours_since_seen"] = hours_since_seen
 
-        row["window_missing_fraction"] = float(total_missing / (cfg.observation_hours * len(DYNAMIC_FEATURES)))
+        row["window_missing_fraction"] = float(
+            total_missing / (cfg.observation_hours * len(DYNAMIC_FEATURES))
+        )
 
         # --- Composite clinical features (Phase 1.3) ---
         hr_last = row.get("HR__last", 80.0)
@@ -529,9 +610,13 @@ def build_tabular_records_for_patient(
         slope_window = min(6, cfg.observation_hours)
         x_slope = np.arange(slope_window, dtype=np.float32)
         for slope_feat in ("HR", "SBP", "O2Sat", "Temp", "Resp"):
-            feat_vals = filled_window[slope_feat].to_numpy(dtype=np.float32)[-slope_window:]
+            feat_vals = filled_window[slope_feat].to_numpy(dtype=np.float32)[
+                -slope_window:
+            ]
             if len(feat_vals) >= 2 and feat_vals.std() > 0:
-                slope_val = float(np.polyfit(x_slope[-len(feat_vals):], feat_vals, 1)[0])
+                slope_val = float(
+                    np.polyfit(x_slope[-len(feat_vals) :], feat_vals, 1)[0]
+                )
             else:
                 slope_val = 0.0
             row[f"{slope_feat}__slope_6h"] = slope_val
@@ -557,10 +642,15 @@ def build_tabular_dataset(
     all_records: List[Dict[str, Any]] = []
     for idx, row in enumerate(split_manifest.itertuples(index=False), start=1):
         if idx % 500 == 0:
-            logger.info("Building %s tabular set: %s / %s patients", split_name, idx, len(split_manifest))
+            logger.info(
+                "Building %s tabular set: %s / %s patients",
+                split_name,
+                idx,
+                len(split_manifest),
+            )
         onset_index = _to_onset_int(getattr(row, onset_column, None))
         records = build_tabular_records_for_patient(
-            path=Path(row.path),
+            path=Path(str(getattr(row, "path"))),
             onset_index=onset_index,
             stats=stats,
             cfg=cfg,
@@ -568,12 +658,18 @@ def build_tabular_dataset(
         all_records.extend(records)
 
     if not all_records:
-        raise RuntimeError(f"No training windows produced for split={split_name}, onset_column={onset_column}")
+        raise RuntimeError(
+            f"No training windows produced for split={split_name}, onset_column={onset_column}"
+        )
     return pd.DataFrame(all_records)
 
 
 def get_xgb_feature_columns(df: pd.DataFrame) -> List[str]:
-    return [col for col in df.columns if col not in {"patient_id", "anchor_iculos", "target"}]
+    return [
+        col
+        for col in df.columns
+        if col not in {"patient_id", "anchor_iculos", "target"}
+    ]
 
 
 def safe_auc(y_true: np.ndarray, y_prob: np.ndarray) -> Optional[float]:
@@ -589,7 +685,9 @@ def safe_average_precision(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     return float(average_precision_score(y_true, y_prob))
 
 
-def choose_threshold_from_validation(y_true: np.ndarray, y_prob: np.ndarray) -> Dict[str, float]:
+def choose_threshold_from_validation(
+    y_true: np.ndarray, y_prob: np.ndarray
+) -> Dict[str, float]:
     if np.unique(y_true).size < 2:
         return {"threshold": 0.5, "precision": 0.0, "recall": 0.0, "f2": 0.0}
 
@@ -600,7 +698,12 @@ def choose_threshold_from_validation(y_true: np.ndarray, y_prob: np.ndarray) -> 
     precision = precision[:-1]
     recall = recall[:-1]
     beta_sq = 4.0
-    scores = (1 + beta_sq) * precision * recall / np.maximum(beta_sq * precision + recall, 1e-8)
+    scores = (
+        (1 + beta_sq)
+        * precision
+        * recall
+        / np.maximum(beta_sq * precision + recall, 1e-8)
+    )
     best_idx = int(np.argmax(scores))
     return {
         "threshold": float(thresholds[best_idx]),
@@ -610,7 +713,9 @@ def choose_threshold_from_validation(y_true: np.ndarray, y_prob: np.ndarray) -> 
     }
 
 
-def score_predictions(y_true: np.ndarray, y_prob: np.ndarray, threshold: float) -> Dict[str, Any]:
+def score_predictions(
+    y_true: np.ndarray, y_prob: np.ndarray, threshold: float
+) -> Dict[str, Any]:
     y_pred = (y_prob >= threshold).astype(int)
     return {
         "auc": safe_auc(y_true, y_prob),
@@ -618,7 +723,9 @@ def score_predictions(y_true: np.ndarray, y_prob: np.ndarray, threshold: float) 
         "brier_score": float(brier_score_loss(y_true, y_prob)),
         "positive_rate": float(np.mean(y_true)),
         "prediction_rate": float(np.mean(y_pred)),
-        "classification_report": classification_report(y_true, y_pred, digits=4, output_dict=True, zero_division=0),
+        "classification_report": classification_report(
+            y_true, y_pred, digits=4, output_dict=True, zero_division=0
+        ),
     }
 
 
@@ -635,7 +742,9 @@ def train_xgboost_model(
     X_train = train_df[feature_cols]
     y_train = train_df["target"].astype(int)
     if y_train.nunique() < 2:
-        raise RuntimeError("Training windows contain only one class. Increase the cohort size or run on the full dataset.")
+        raise RuntimeError(
+            "Training windows contain only one class. Increase the cohort size or run on the full dataset."
+        )
     X_val = val_df[feature_cols]
     y_val = val_df["target"].astype(int)
     X_test = test_df[feature_cols]
@@ -655,20 +764,32 @@ def train_xgboost_model(
     if cfg.use_smote:
         try:
             from imblearn.over_sampling import SMOTE  # type: ignore
-            smote = SMOTE(sampling_strategy=cfg.smote_sampling_strategy, random_state=cfg.random_seed)
-            X_train_sm, y_train_sm = smote.fit_resample(X_train.to_numpy(), y_train.to_numpy())
+
+            smote = SMOTE(
+                sampling_strategy=cfg.smote_sampling_strategy,
+                random_state=cfg.random_seed,
+            )
+            X_train_sm, y_train_sm = smote.fit_resample(
+                X_train.to_numpy(), y_train.to_numpy()
+            )
             logger.info(
                 "SMOTE applied: %d → %d training rows (pos rate %.3f → %.3f)",
-                len(y_train), len(y_train_sm),
-                float(y_train.mean()), float(y_train_sm.mean()),
+                len(y_train),
+                len(y_train_sm),
+                float(y_train.mean()),
+                float(y_train_sm.mean()),
             )
-            dtrain = xgb.DMatrix(X_train_sm, label=y_train_sm, feature_names=feature_cols)
+            dtrain = xgb.DMatrix(
+                X_train_sm, label=y_train_sm, feature_names=feature_cols
+            )
             # Recompute scale_pos_weight on the SMOTE-augmented set
             pos_count = int(y_train_sm.sum())
             neg_count = int((1 - y_train_sm).sum())
             scale_pos_weight = float(neg_count / max(pos_count, 1))
         except ImportError:
-            logger.warning("--use_smote requires imbalanced-learn: pip install imbalanced-learn. Skipping SMOTE.")
+            logger.warning(
+                "--use_smote requires imbalanced-learn: pip install imbalanced-learn. Skipping SMOTE."
+            )
 
     # CRITICAL: put aucpr LAST — XGBoost early_stopping_rounds monitors the
     # last metric in the list.  When auc was last (original bug), training stopped
@@ -695,7 +816,11 @@ def train_xgboost_model(
 
     logger.info(
         "Training XGBoost | features=%d scale_pos_weight=%.2f max_depth=%d min_child_weight=%d max_delta_step=%d",
-        len(feature_cols), scale_pos_weight, cfg.xgb_max_depth, cfg.xgb_min_child_weight, cfg.xgb_max_delta_step,
+        len(feature_cols),
+        scale_pos_weight,
+        cfg.xgb_max_depth,
+        cfg.xgb_min_child_weight,
+        cfg.xgb_max_delta_step,
     )
     booster = xgb.train(
         params=params,
@@ -725,7 +850,9 @@ def train_xgboost_model(
     }
 
     importance = booster.get_score(importance_type="gain")
-    metrics["feature_importance_gain"] = dict(sorted(importance.items(), key=lambda item: item[1], reverse=True)[:50])
+    metrics["feature_importance_gain"] = dict(
+        sorted(importance.items(), key=lambda item: item[1], reverse=True)[:50]
+    )
 
     # Isotonic calibration: fit on validation set so the output is a calibrated probability
     calibrator = IsotonicRegression(out_of_bounds="clip")
@@ -738,11 +865,17 @@ def train_xgboost_model(
     cal_test_prob = calibrator.predict(test_prob)
     metrics["calibration"] = {
         "method": "isotonic_regression",
-        "val_metrics_calibrated": score_predictions(y_val.to_numpy(), cal_val_prob, threshold),
-        "test_metrics_calibrated": score_predictions(y_test.to_numpy(), cal_test_prob, threshold),
+        "val_metrics_calibrated": score_predictions(
+            y_val.to_numpy(), cal_val_prob, threshold
+        ),
+        "test_metrics_calibrated": score_predictions(
+            y_test.to_numpy(), cal_test_prob, threshold
+        ),
     }
 
-    with (output_dir / f"{model_prefix}_metrics.json").open("w", encoding="utf-8") as handle:
+    with (output_dir / f"{model_prefix}_metrics.json").open(
+        "w", encoding="utf-8"
+    ) as handle:
         json.dump(metrics, handle, indent=2)
 
     return metrics
@@ -784,23 +917,32 @@ def train_ensemble_model(
     xgb_calibrator = None
     if xgb_cal_path.exists():
         with xgb_cal_path.open("rb") as fh:
-            xgb_calibrator = pickle.load(fh)
+            xgb_calibrator = pickle.load(fh)  # nosec B301
 
     val_df = pd.read_parquet(val_parquet)
     y_val = val_df["target"].astype(int).to_numpy()
     dval = xgb.DMatrix(val_df[feature_cols], label=y_val, feature_names=feature_cols)
     xgb_raw_val = xgb_booster.predict(dval)
-    xgb_val_prob = xgb_calibrator.predict(xgb_raw_val) if xgb_calibrator is not None else xgb_raw_val
+    xgb_val_prob = (
+        xgb_calibrator.predict(xgb_raw_val)
+        if xgb_calibrator is not None
+        else xgb_raw_val
+    )
 
     # ── Load GRU on val set ───────────────────────────────────────────────────
-    gru_val_y_path = output_dir / f"{gru_model_prefix.replace('sequence_', 'sequence_')}_val_y.npy"
+    gru_val_y_path = (
+        output_dir / f"{gru_model_prefix.replace('sequence_', 'sequence_')}_val_y.npy"
+    )
     gru_val_y_path = output_dir / "sequence_val_y.npy"
     gru_val_X_path = output_dir / "sequence_val_X.npy"
     gru_metrics_path = output_dir / f"{gru_model_prefix}_metrics.json"
     gru_model_path = output_dir / f"{gru_model_prefix}_model.pt"
     gru_cal_path = output_dir / f"{gru_model_prefix}_calibrator.pkl"
 
-    if not all(p.exists() for p in [gru_val_X_path, gru_val_y_path, gru_metrics_path, gru_model_path]):
+    if not all(
+        p.exists()
+        for p in [gru_val_X_path, gru_val_y_path, gru_metrics_path, gru_model_path]
+    ):
         raise FileNotFoundError(
             "Ensemble training requires sequence_val_X.npy, sequence_val_y.npy, "
             f"{gru_model_prefix}_metrics.json, and {gru_model_prefix}_model.pt in output_dir."
@@ -818,22 +960,32 @@ def train_ensemble_model(
         dropout=float(arch.get("dropout", 0.3)),
         bidirectional=bool(arch.get("bidirectional", True)),
     ).to(device)
-    gru_net.load_state_dict(torch.load(gru_model_path, map_location=device, weights_only=False))
+    gru_net.load_state_dict(
+        torch.load(gru_model_path, map_location=device, weights_only=True)
+    )
     gru_net.eval()
 
     gru_calibrator = None
     if gru_cal_path.exists():
         with gru_cal_path.open("rb") as fh:
-            gru_calibrator = pickle.load(fh)
+            gru_calibrator = pickle.load(fh)  # nosec B301
 
     X_val_seq = np.load(gru_val_X_path, mmap_mode="r")
     y_val_seq = np.load(gru_val_y_path, mmap_mode="r")
 
     # GRU val set is patient-level; XGBoost val set is window-level.
     # Use GRU patient-level y for ensemble evaluation — ensemble is patient-level.
-    gru_val_loader = build_sequence_loader(np.asarray(X_val_seq), np.asarray(y_val_seq), batch_size=256, shuffle=False)
-    _, gru_raw_val, gru_val_true = evaluate_sequence_model(gru_net, gru_val_loader, device)
-    gru_val_prob = gru_calibrator.predict(gru_raw_val) if gru_calibrator is not None else gru_raw_val
+    gru_val_loader = build_sequence_loader(
+        np.asarray(X_val_seq), np.asarray(y_val_seq), batch_size=256, shuffle=False
+    )
+    _, gru_raw_val, gru_val_true = evaluate_sequence_model(
+        gru_net, gru_val_loader, device
+    )
+    gru_val_prob = (
+        gru_calibrator.predict(gru_raw_val)
+        if gru_calibrator is not None
+        else gru_raw_val
+    )
 
     # The two val sets have different granularities (patient vs window).
     # For the ensemble we use the GRU's patient-level labels and probabilities,
@@ -842,16 +994,18 @@ def train_ensemble_model(
     val_df["xgb_prob"] = xgb_val_prob
     xgb_patient_prob = (
         val_df.sort_values("anchor_iculos")
-              .groupby("patient_id")["xgb_prob"]
-              .apply(lambda s: float(s.tail(6).mean()))
+        .groupby("patient_id")["xgb_prob"]
+        .apply(lambda s: float(s.tail(6).mean()))
     )
 
     # Align on patient IDs from the GRU val set
     gru_patient_ids = np.load(output_dir / "sequence_val_patient_ids.npy")
-    xgb_aligned = np.array([
-        float(xgb_patient_prob.get(pid, xgb_val_prob.mean()))
-        for pid in gru_patient_ids
-    ])
+    xgb_aligned = np.array(
+        [
+            float(xgb_patient_prob.get(pid, xgb_val_prob.mean()))
+            for pid in gru_patient_ids
+        ]
+    )
 
     X_meta = np.column_stack([gru_val_prob, xgb_aligned])
     y_meta = gru_val_true.astype(int)
@@ -860,13 +1014,22 @@ def train_ensemble_model(
     meta.fit(X_meta, y_meta)
 
     meta_prob = meta.predict_proba(X_meta)[:, 1]
-    ensemble_auc  = float(roc_auc_score(y_meta, meta_prob)) if np.unique(y_meta).size > 1 else None
-    ensemble_auprc = float(average_precision_score(y_meta, meta_prob)) if np.unique(y_meta).size > 1 else None
+    ensemble_auc = (
+        float(roc_auc_score(y_meta, meta_prob)) if np.unique(y_meta).size > 1 else None
+    )
+    ensemble_auprc = (
+        float(average_precision_score(y_meta, meta_prob))
+        if np.unique(y_meta).size > 1
+        else None
+    )
 
     logger.info(
         "Ensemble meta-learner | val_auc=%.4f val_auprc=%.4f | coefs=[gru=%.3f xgb=%.3f] intercept=%.3f",
-        ensemble_auc or 0, ensemble_auprc or 0,
-        float(meta.coef_[0][0]), float(meta.coef_[0][1]), float(meta.intercept_[0]),
+        ensemble_auc or 0,
+        ensemble_auprc or 0,
+        float(meta.coef_[0][0]),
+        float(meta.coef_[0][1]),
+        float(meta.intercept_[0]),
     )
 
     ensemble_path = output_dir / "ensemble_meta.pkl"
@@ -879,8 +1042,16 @@ def train_ensemble_model(
         "coef_gru": float(meta.coef_[0][0]),
         "coef_xgb": float(meta.coef_[0][1]),
         "intercept": float(meta.intercept_[0]),
-        "gru_val_auprc": float(average_precision_score(y_meta, gru_val_prob)) if np.unique(y_meta).size > 1 else None,
-        "xgb_val_auprc": float(average_precision_score(y_meta, xgb_aligned)) if np.unique(y_meta).size > 1 else None,
+        "gru_val_auprc": (
+            float(average_precision_score(y_meta, gru_val_prob))
+            if np.unique(y_meta).size > 1
+            else None
+        ),
+        "xgb_val_auprc": (
+            float(average_precision_score(y_meta, xgb_aligned))
+            if np.unique(y_meta).size > 1
+            else None
+        ),
     }
     with (output_dir / "ensemble_metrics.json").open("w", encoding="utf-8") as fh:
         json.dump(ensemble_metrics, fh, indent=2)
@@ -888,9 +1059,15 @@ def train_ensemble_model(
     return ensemble_metrics
 
 
-def zscore_normalize(values: np.ndarray, stats: TrainStatistics, features: Sequence[str]) -> np.ndarray:
-    means = np.array([stats.value_means[feature] for feature in features], dtype=np.float32)
-    stds = np.array([stats.value_stds[feature] for feature in features], dtype=np.float32)
+def zscore_normalize(
+    values: np.ndarray, stats: TrainStatistics, features: Sequence[str]
+) -> np.ndarray:
+    means = np.array(
+        [stats.value_means[feature] for feature in features], dtype=np.float32
+    )
+    stds = np.array(
+        [stats.value_stds[feature] for feature in features], dtype=np.float32
+    )
     return (values - means) / stds
 
 
@@ -949,36 +1126,41 @@ def export_sequence_arrays(
 
     for idx, row in enumerate(split_manifest.itertuples(index=False), start=1):
         if idx % 500 == 0:
-            logger.info("Building %s sequence set: %s / %s patients", split_name, idx, len(split_manifest))
+            logger.info(
+                "Building %s sequence set: %s / %s patients",
+                split_name,
+                idx,
+                len(split_manifest),
+            )
         onset_index = _to_onset_int(getattr(row, onset_column, None))
-        windows, labels, patient_ids, anchors = build_sequence_arrays_for_patient(
-            path=Path(row.path),
+        windows, labels, patient_ids_batch, anchors_batch = build_sequence_arrays_for_patient(
+            path=Path(str(getattr(row, "path"))),
             onset_index=onset_index,
             stats=stats,
             cfg=cfg,
         )
         all_windows.extend(windows)
         all_labels.extend(labels)
-        all_patient_ids.extend(patient_ids)
-        all_anchors.extend(anchors)
+        all_patient_ids.extend(patient_ids_batch)
+        all_anchors.extend(anchors_batch)
 
     if not all_windows:
         raise RuntimeError(f"No sequence windows produced for split={split_name}")
 
-    X = np.asarray(all_windows, dtype=np.float32)
-    y = np.asarray(all_labels, dtype=np.float32)
-    patient_ids = np.asarray(all_patient_ids)
-    anchors = np.asarray(all_anchors, dtype=np.int32)
+    X_arr = np.asarray(all_windows, dtype=np.float32)
+    y_arr = np.asarray(all_labels, dtype=np.float32)
+    patient_ids_arr = np.asarray(all_patient_ids)
+    anchors_arr = np.asarray(all_anchors, dtype=np.int32)
 
-    np.save(output_dir / f"{array_prefix}_{split_name}_X.npy", X)
-    np.save(output_dir / f"{array_prefix}_{split_name}_y.npy", y)
-    np.save(output_dir / f"{array_prefix}_{split_name}_patient_ids.npy", patient_ids)
-    np.save(output_dir / f"{array_prefix}_{split_name}_anchor_iculos.npy", anchors)
+    np.save(output_dir / f"{array_prefix}_{split_name}_X.npy", X_arr)
+    np.save(output_dir / f"{array_prefix}_{split_name}_y.npy", y_arr)
+    np.save(output_dir / f"{array_prefix}_{split_name}_patient_ids.npy", patient_ids_arr)
+    np.save(output_dir / f"{array_prefix}_{split_name}_anchor_iculos.npy", anchors_arr)
 
     return {
         "split": split_name,
-        "shape": list(X.shape),
-        "positive_rate": float(y.mean()),
+        "shape": list(X_arr.shape),
+        "positive_rate": float(y_arr.mean()),
     }
 
 
@@ -1065,17 +1247,22 @@ def export_patient_sequences(
 
     for idx, row in enumerate(split_manifest.itertuples(index=False), start=1):
         if idx % 1000 == 0:
-            logger.info("Building %s patient sequences: %s / %s", split_name, idx, len(split_manifest))
+            logger.info(
+                "Building %s patient sequences: %s / %s",
+                split_name,
+                idx,
+                len(split_manifest),
+            )
         onset_index = _to_onset_int(getattr(row, onset_column, None))
         seq, label = build_patient_level_sequence(
-            path=Path(row.path),
+            path=Path(str(getattr(row, "path"))),
             onset_index=onset_index,
             stats=stats,
             cfg=cfg,
         )
         all_sequences.append(seq)
         all_labels.append(label)
-        all_patient_ids.append(row.patient_id)
+        all_patient_ids.append(str(getattr(row, "patient_id")))
 
     if not all_sequences:
         raise RuntimeError(f"No patient sequences produced for split={split_name}")
@@ -1086,7 +1273,9 @@ def export_patient_sequences(
 
     np.save(output_dir / f"{array_prefix}_{split_name}_X.npy", X)
     np.save(output_dir / f"{array_prefix}_{split_name}_y.npy", y)
-    np.save(output_dir / f"{array_prefix}_{split_name}_patient_ids.npy", patient_ids_arr)
+    np.save(
+        output_dir / f"{array_prefix}_{split_name}_patient_ids.npy", patient_ids_arr
+    )
 
     return {
         "split": split_name,
@@ -1109,16 +1298,29 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        bce = nn.functional.binary_cross_entropy_with_logits(logits, targets, reduction="none")
+        bce = nn.functional.binary_cross_entropy_with_logits(
+            logits, targets, reduction="none"
+        )
         probs = torch.sigmoid(logits)
         pt = torch.where(targets == 1, probs, 1.0 - probs)
-        alpha_t = torch.where(targets == 1, torch.full_like(targets, self.alpha), torch.full_like(targets, 1.0 - self.alpha))
+        alpha_t = torch.where(
+            targets == 1,
+            torch.full_like(targets, self.alpha),
+            torch.full_like(targets, 1.0 - self.alpha),
+        )
         focal_weight = alpha_t * (1.0 - pt) ** self.gamma
         return (focal_weight * bce).mean()
 
 
 class SequenceGRU(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, num_layers: int, dropout: float, bidirectional: bool = True):
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        num_layers: int,
+        dropout: float,
+        bidirectional: bool = True,
+    ):
         super().__init__()
         self.bidirectional = bidirectional
         self.gru = nn.GRU(
@@ -1169,7 +1371,12 @@ def build_sequence_loader(
         torch.tensor(y, dtype=torch.float32),
     )
     # sampler is mutually exclusive with shuffle
-    return DataLoader(dataset, batch_size=batch_size, shuffle=(shuffle and sampler is None), sampler=sampler)
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=(shuffle and sampler is None),
+        sampler=sampler,
+    )
 
 
 def evaluate_sequence_model(
@@ -1241,7 +1448,9 @@ def train_sequence_model(
     y_test = np.load(output_dir / f"{array_prefix}_test_y.npy", mmap_mode="r")
 
     if np.unique(np.asarray(y_train)).size < 2:
-        raise RuntimeError("Sequence training windows contain only one class. Increase the cohort size or run on the full dataset.")
+        raise RuntimeError(
+            "Sequence training windows contain only one class. Increase the cohort size or run on the full dataset."
+        )
 
     y_train_arr = np.asarray(y_train)
     pos_count = float(y_train_arr.sum())
@@ -1250,13 +1459,23 @@ def train_sequence_model(
     # This is the sequence equivalent of XGBoost's scale_pos_weight.
     sample_weights = np.where(y_train_arr == 1, neg_count / max(pos_count, 1.0), 1.0)
     sampler = torch.utils.data.WeightedRandomSampler(
-        weights=torch.tensor(sample_weights, dtype=torch.float32),
+        weights=sample_weights.tolist(),
         num_samples=len(sample_weights),
         replacement=True,
     )
-    train_loader = build_sequence_loader(np.asarray(X_train), y_train_arr, cfg.sequence_batch_size, shuffle=False, sampler=sampler)
-    val_loader = build_sequence_loader(np.asarray(X_val), np.asarray(y_val), cfg.sequence_batch_size, shuffle=False)
-    test_loader = build_sequence_loader(np.asarray(X_test), np.asarray(y_test), cfg.sequence_batch_size, shuffle=False)
+    train_loader = build_sequence_loader(
+        np.asarray(X_train),
+        y_train_arr,
+        cfg.sequence_batch_size,
+        shuffle=False,
+        sampler=sampler,
+    )
+    val_loader = build_sequence_loader(
+        np.asarray(X_val), np.asarray(y_val), cfg.sequence_batch_size, shuffle=False
+    )
+    test_loader = build_sequence_loader(
+        np.asarray(X_test), np.asarray(y_test), cfg.sequence_batch_size, shuffle=False
+    )
 
     device = resolve_sequence_training_device()
     model = SequenceGRU(
@@ -1274,14 +1493,19 @@ def train_sequence_model(
     # scale_pos_weight approach and avoids the loss-collapse seen with FocalLoss
     # on window-level data where positives are only ~1% of rows.
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.sequence_learning_rate, weight_decay=1e-4)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=cfg.sequence_learning_rate, weight_decay=1e-4
+    )
 
     # Cosine annealing with 2-epoch linear warmup
     warmup_epochs = 2
+
     def lr_lambda(epoch: int) -> float:
         if epoch < warmup_epochs:
             return float(epoch + 1) / float(warmup_epochs)
-        progress = float(epoch - warmup_epochs) / float(max(cfg.sequence_epochs - warmup_epochs, 1))
+        progress = float(epoch - warmup_epochs) / float(
+            max(cfg.sequence_epochs - warmup_epochs, 1)
+        )
         return 0.5 * (1.0 + math.cos(math.pi * progress))
 
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
@@ -1308,12 +1532,26 @@ def train_sequence_model(
             epoch_losses.append(float(loss.item()))
 
         scheduler.step()
-        val_loss, val_prob, val_true = evaluate_sequence_model(model, val_loader, device)
+        val_loss, val_prob, val_true = evaluate_sequence_model(
+            model, val_loader, device
+        )
 
         # Guard against NaN probabilities (can occur with very small datasets or early divergence)
         if not np.isfinite(val_prob).all():
-            logger.warning("Epoch %s: val_prob contains NaN/Inf — skipping metric update", epoch + 1)
-            history.append({"epoch": epoch + 1, "train_loss": float(np.mean(epoch_losses)), "val_loss": float("nan"), "val_average_precision": 0.0, "val_auc": 0.0, "lr": float(scheduler.get_last_lr()[0])})
+            logger.warning(
+                "Epoch %s: val_prob contains NaN/Inf — skipping metric update",
+                epoch + 1,
+            )
+            history.append(
+                {
+                    "epoch": epoch + 1,
+                    "train_loss": float(np.mean(epoch_losses)),
+                    "val_loss": float("nan"),
+                    "val_average_precision": 0.0,
+                    "val_auc": 0.0,
+                    "lr": float(scheduler.get_last_lr()[0]),
+                }
+            )
             patience_counter += 1
             if patience_counter >= cfg.sequence_early_stopping_patience:
                 logger.info("Early stopping at epoch %s (NaN divergence)", epoch + 1)
@@ -1350,13 +1588,19 @@ def train_sequence_model(
         else:
             patience_counter += 1
             if patience_counter >= cfg.sequence_early_stopping_patience:
-                logger.info("Early stopping at epoch %s (patience=%s)", epoch + 1, cfg.sequence_early_stopping_patience)
+                logger.info(
+                    "Early stopping at epoch %s (patience=%s)",
+                    epoch + 1,
+                    cfg.sequence_early_stopping_patience,
+                )
                 break
 
-    model.load_state_dict(torch.load(best_path, map_location=device))
+    model.load_state_dict(torch.load(best_path, map_location=device, weights_only=True))
     _, val_prob, val_true = evaluate_sequence_model(model, val_loader, device)
     if not np.isfinite(val_prob).all():
-        logger.warning("Best model still produces non-finite val_prob — defaulting threshold to 0.5")
+        logger.warning(
+            "Best model still produces non-finite val_prob — defaulting threshold to 0.5"
+        )
         val_prob = np.nan_to_num(val_prob, nan=0.5, posinf=1.0, neginf=0.0)
     threshold_info = choose_threshold_from_validation(val_true, val_prob)
     threshold = threshold_info["threshold"]
@@ -1381,7 +1625,9 @@ def train_sequence_model(
     }
 
     # Isotonic calibration: fit on validation set (skip if val_prob has NaN from divergence)
-    _, test_prob_raw, test_true_raw = evaluate_sequence_model(model, test_loader, device)
+    _, test_prob_raw, test_true_raw = evaluate_sequence_model(
+        model, test_loader, device
+    )
     if np.isfinite(val_prob).all() and np.unique(val_true).size > 1:
         calibrator = IsotonicRegression(out_of_bounds="clip")
         calibrator.fit(val_prob, val_true)
@@ -1391,17 +1637,29 @@ def train_sequence_model(
         cal_val_prob = calibrator.predict(val_prob)
         cal_test_prob = calibrator.predict(test_prob_raw)
     else:
-        logger.warning("Skipping sequence calibration: val_prob is not finite or val set has single class.")
+        logger.warning(
+            "Skipping sequence calibration: val_prob is not finite or val set has single class."
+        )
         calibrator = None
         cal_val_prob = val_prob
         cal_test_prob = test_prob_raw
     metrics["calibration"] = {
         "method": "isotonic_regression" if calibrator is not None else "none",
-        "val_metrics_calibrated": score_predictions(val_true, cal_val_prob, threshold) if calibrator is not None else None,
-        "test_metrics_calibrated": score_predictions(test_true_raw, cal_test_prob, threshold) if calibrator is not None else None,
+        "val_metrics_calibrated": (
+            score_predictions(val_true, cal_val_prob, threshold)
+            if calibrator is not None
+            else None
+        ),
+        "test_metrics_calibrated": (
+            score_predictions(test_true_raw, cal_test_prob, threshold)
+            if calibrator is not None
+            else None
+        ),
     }
 
-    with (output_dir / f"{model_prefix}_metrics.json").open("w", encoding="utf-8") as handle:
+    with (output_dir / f"{model_prefix}_metrics.json").open(
+        "w", encoding="utf-8"
+    ) as handle:
         json.dump(metrics, handle, indent=2)
 
     return metrics
@@ -1451,7 +1709,8 @@ def run_pipeline(cfg: PipelineConfig) -> None:
         missing = [str(path) for path in required_arrays if not path.exists()]
         if missing:
             raise FileNotFoundError(
-                "Sequence-only training requires exported arrays in the output directory. Missing: " + ", ".join(missing)
+                "Sequence-only training requires exported arrays in the output directory. Missing: "
+                + ", ".join(missing)
             )
 
         logger.info("Sequence-only mode: reusing exported arrays from %s", output_dir)
@@ -1468,12 +1727,16 @@ def run_pipeline(cfg: PipelineConfig) -> None:
     manifest = stratified_patient_split(manifest, cfg)
     save_manifest(manifest, output_dir)
 
-    split_summary = {split: summarize_split(manifest, split) for split in ("train", "val", "test")}
+    split_summary = {
+        split: summarize_split(manifest, split) for split in ("train", "val", "test")
+    }
     with (output_dir / "split_summary.json").open("w", encoding="utf-8") as handle:
         json.dump(split_summary, handle, indent=2)
     logger.info("Split summary: %s", split_summary)
 
-    train_paths = [Path(path) for path in manifest.loc[manifest["split"] == "train", "path"]]
+    train_paths = [
+        Path(path) for path in manifest.loc[manifest["split"] == "train", "path"]
+    ]
     stats = fit_train_statistics(train_paths)
     save_statistics(stats, output_dir)
 
@@ -1501,8 +1764,12 @@ def run_pipeline(cfg: PipelineConfig) -> None:
     if cfg.export_sequence_arrays or cfg.train_sequence_model:
         sequence_summaries = {}
         for split_name in ("train", "val", "test"):
-            sequence_summaries[split_name] = export_patient_sequences(manifest, split_name, stats, cfg, output_dir)
-        with (output_dir / "sequence_export_summary.json").open("w", encoding="utf-8") as handle:
+            sequence_summaries[split_name] = export_patient_sequences(
+                manifest, split_name, stats, cfg, output_dir
+            )
+        with (output_dir / "sequence_export_summary.json").open(
+            "w", encoding="utf-8"
+        ) as handle:
             json.dump(sequence_summaries, handle, indent=2)
         logger.info("Sequence arrays exported: %s", sequence_summaries)
 
@@ -1518,30 +1785,46 @@ def run_pipeline(cfg: PipelineConfig) -> None:
     if cfg.train_resp_failure:
         logger.info(
             "=== RESPIRATORY FAILURE MODEL (SF<%.0f, sustained %dh, lookahead %dh) ===",
-            RESP_SF_THRESHOLD, RESP_SUSTAIN_HOURS, RESP_LOOKAHEAD_HOURS,
+            RESP_SF_THRESHOLD,
+            RESP_SUSTAIN_HOURS,
+            RESP_LOOKAHEAD_HOURS,
         )
 
         resp_pos = int(manifest["ever_resp_failure"].sum())
         logger.info(
             "Resp failure cohort: %s positive patients / %s total (%.1f%%)",
-            resp_pos, len(manifest), 100 * resp_pos / max(len(manifest), 1),
+            resp_pos,
+            len(manifest),
+            100 * resp_pos / max(len(manifest), 1),
         )
 
-        train_df_resp = build_tabular_dataset(manifest, "train", stats, cfg, onset_column="resp_failure_onset_index")
-        val_df_resp   = build_tabular_dataset(manifest, "val",   stats, cfg, onset_column="resp_failure_onset_index")
-        test_df_resp  = build_tabular_dataset(manifest, "test",  stats, cfg, onset_column="resp_failure_onset_index")
+        train_df_resp = build_tabular_dataset(
+            manifest, "train", stats, cfg, onset_column="resp_failure_onset_index"
+        )
+        val_df_resp = build_tabular_dataset(
+            manifest, "val", stats, cfg, onset_column="resp_failure_onset_index"
+        )
+        test_df_resp = build_tabular_dataset(
+            manifest, "test", stats, cfg, onset_column="resp_failure_onset_index"
+        )
 
         save_tabular_dataset(train_df_resp, "resp_train", output_dir)
-        save_tabular_dataset(val_df_resp,   "resp_val",   output_dir)
-        save_tabular_dataset(test_df_resp,  "resp_test",  output_dir)
+        save_tabular_dataset(val_df_resp, "resp_val", output_dir)
+        save_tabular_dataset(test_df_resp, "resp_test", output_dir)
 
         logger.info(
             "Resp tabular windows | train=%s val=%s test=%s",
-            len(train_df_resp), len(val_df_resp), len(test_df_resp),
+            len(train_df_resp),
+            len(val_df_resp),
+            len(test_df_resp),
         )
 
         resp_xgb_metrics = train_xgboost_model(
-            train_df_resp, val_df_resp, test_df_resp, cfg, output_dir,
+            train_df_resp,
+            val_df_resp,
+            test_df_resp,
+            cfg,
+            output_dir,
             model_prefix="xgboost_resp",
         )
         logger.info(
@@ -1554,17 +1837,24 @@ def run_pipeline(cfg: PipelineConfig) -> None:
             resp_seq_summaries = {}
             for split_name in ("train", "val", "test"):
                 resp_seq_summaries[split_name] = export_patient_sequences(
-                    manifest, split_name, stats, cfg, output_dir,
+                    manifest,
+                    split_name,
+                    stats,
+                    cfg,
+                    output_dir,
                     onset_column="resp_failure_onset_index",
                     array_prefix="sequence_resp",
                 )
-            with (output_dir / "sequence_resp_export_summary.json").open("w", encoding="utf-8") as handle:
+            with (output_dir / "sequence_resp_export_summary.json").open(
+                "w", encoding="utf-8"
+            ) as handle:
                 json.dump(resp_seq_summaries, handle, indent=2)
             logger.info("Resp sequence arrays exported: %s", resp_seq_summaries)
 
         if cfg.train_sequence_model:
             resp_seq_metrics = train_sequence_model(
-                cfg, output_dir,
+                cfg,
+                output_dir,
                 array_prefix="sequence_resp",
                 model_prefix="sequence_resp_gru",
             )
@@ -1577,7 +1867,9 @@ def run_pipeline(cfg: PipelineConfig) -> None:
     # ── Ensemble meta-learner (optional) ─────────────────────────────────────
     if cfg.train_ensemble:
         if not cfg.train_sequence_model:
-            logger.warning("--train_ensemble requires --train_sequence_model to have run first.")
+            logger.warning(
+                "--train_ensemble requires --train_sequence_model to have run first."
+            )
         else:
             logger.info("=== ENSEMBLE META-LEARNER ===")
             ensemble_metrics = train_ensemble_model(cfg, output_dir)
@@ -1590,7 +1882,3 @@ def run_pipeline(cfg: PipelineConfig) -> None:
 
 if __name__ == "__main__":
     run_pipeline(parse_args())
-
-
-
-

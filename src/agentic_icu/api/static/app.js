@@ -177,7 +177,7 @@ const apiConfig        = ()           => apiFetch("/runtime-config");
 const apiReport        = ()           => apiFetch("/reports/alert-policy-latest");
 
 // ── SVG sparkline ─────────────────────────────────────────────────────────
-function drawSparkline(svgEl, values, {color="#2dd4bf", W=320, H=52, pad=5, zones=[]}={}) {
+function drawSparkline(svgEl, values, {color="#2dd4bf", W=320, H=52, pad=5, zones=[], alertAnnotation=null}={}) {
   if (!svgEl || !values || values.length < 2) { if (svgEl) svgEl.innerHTML = ""; return; }
   const filled = fillGaps(values);
   const fin = filled.filter(v => v != null && isFinite(v));
@@ -191,7 +191,12 @@ function drawSparkline(svgEl, values, {color="#2dd4bf", W=320, H=52, pad=5, zone
     const y1 = Math.min(sy(zn.lo), sy(zn.hi)), y2 = Math.max(sy(zn.lo), sy(zn.hi));
     z += `<rect x="0" y="${y1.toFixed(1)}" width="${W}" height="${Math.max(1,(y2-y1)).toFixed(1)}" fill="${zn.color}" opacity="${zn.opacity||0.12}"/>`;
   }
-  svgEl.innerHTML = `${z}<path d="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>`;
+  let annotation = "";
+  if (alertAnnotation != null && alertAnnotation > 0 && alertAnnotation < values.length) {
+    const ax = sx(alertAnnotation);
+    annotation = `<line x1="${ax.toFixed(1)}" y1="${pad}" x2="${ax.toFixed(1)}" y2="${H-pad}" stroke="rgba(248,113,113,0.7)" stroke-width="1.2" stroke-dasharray="3,2"/>`;
+  }
+  svgEl.innerHTML = `${z}<path d="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>${annotation}`;
 }
 
 // ── Fill null gaps in a series (forward-fill then backward-fill) ─────────
@@ -267,7 +272,7 @@ function fmtV(v, dp, key) {
 }
 
 // ── Render vitals on detail sidebar charts ────────────────────────────────
-function renderVitalCharts(window) {
+function renderVitalCharts(window, alertFrame) {
   const CHARTS = [
     {id:"hr-trend-selected",   key:"HR",     color:"#f87171", meta:"trend-hr-selected-meta",   zones:[{lo:50,hi:60,color:"#f87171"},{lo:100,hi:200,color:"#f87171"}]},
     {id:"spo2-trend-selected", key:"O2Sat",  color:"#2dd4bf", meta:"trend-spo2-selected-meta",  zones:[{lo:0,hi:94,color:"#f87171"}]},
@@ -281,7 +286,7 @@ function renderVitalCharts(window) {
     const ser = extractSeries(window, c.key);
     const fin = ser.filter(v => v != null);
     if (fin.length > 0) {
-      drawSparkline(svgEl, ser, {color:c.color, zones:c.zones, W:320, H:48});
+      drawSparkline(svgEl, ser, {color:c.color, zones:c.zones, W:320, H:48, alertAnnotation:alertFrame});
       if (metaEl) metaEl.textContent = `${fin[fin.length-1].toFixed(1)}  (${Math.min(...fin).toFixed(1)}–${Math.max(...fin).toFixed(1)})`;
     } else {
       if (svgEl) svgEl.innerHTML = "";
@@ -415,6 +420,35 @@ function renderSignalQuality(result) {
   }
 }
 
+// ── Render SOFA score ─────────────────────────────────────────────────────
+function renderSofa(result) {
+  const sec = $("sofa-section");
+  const grid = $("sofa-grid");
+  const badge = $("sofa-total-badge");
+  if (!sec || !grid || !badge) return;
+  const s = result?.sofa;
+  if (!s || s.components_available === 0) { sec.style.display = "none"; return; }
+  sec.style.display = "";
+  badge.textContent = `${s.total} / ${s.components_available * 4} (${s.interpretation})`;
+  badge.className = `dss-badge sofa-${s.interpretation}`;
+  const comp = [
+    { label: "Resp (SpO₂/FiO₂)", val: s.respiratory },
+    { label: "Coagulation",       val: s.coagulation },
+    { label: "Liver",             val: s.liver },
+    { label: "Cardiovascular",    val: s.cardiovascular },
+    { label: "CNS",               val: s.cns },
+    { label: "Renal",             val: s.renal },
+  ];
+  grid.innerHTML = comp.map(c => {
+    const v = c.val != null ? c.val : "—";
+    const cls = c.val == null ? "sofa-na" : c.val === 0 ? "sofa-ok" : c.val <= 2 ? "sofa-warn" : "sofa-crit";
+    return `<div class="sofa-row">
+      <span class="sofa-lbl">${c.label}</span>
+      <span class="sofa-val ${cls}">${v}</span>
+    </div>`;
+  }).join("");
+}
+
 // ── Render detail sidebar ─────────────────────────────────────────────────
 function renderSidebar(patientId) {
   const entry = state.patients.get(patientId);
@@ -431,8 +465,9 @@ function renderSidebar(patientId) {
   renderAgentTiles(result);
   if (labDriversEl) renderSHAPBars(labDriversEl, result.lab_agent?.feature_contributions);
   if (vitalsSaliencyEl) renderSaliencyStrip(vitalsSaliencyEl, result.vitals_agent?.feature_contributions);
-  if (entry.window?.length) { updateVitalTiles(entry.window); renderVitalCharts(entry.window); }
+  if (entry.window?.length) { updateVitalTiles(entry.window); renderVitalCharts(entry.window, entry.alertFrame); }
   renderSignalQuality(result);
+  renderSofa(result);
   if (riskTimelineSvg) riskTimelineSvg.innerHTML = "";
   if (timelineSection) timelineSection.classList.add("hidden");
   state.timelineData = [];
@@ -864,16 +899,16 @@ function drawTimelineSvg(results, maxH) {
   const th_watch   = ap.high_alert_supported_sequence_score_threshold ?? 0.80;
   const th_medium  = ap.medium_alert_sequence_score_threshold ?? 0.55;
   const zh=sy(th_extreme), zw=sy(th_watch), zm=sy(th_medium);
-  let s = `<rect x="${px}" y="${py}"  width="${gW}" height="${zh-py}"  fill="rgba(248,113,113,.07)"/>
-    <rect x="${px}" y="${zh}" width="${gW}" height="${zw-zh}" fill="rgba(251,191,36,.05)"/>
-    <line x1="${px}" y1="${zh}" x2="${W-px}" y2="${zh}" stroke="rgba(248,113,113,.5)" stroke-width=".7" stroke-dasharray="4,3"/>
-    <line x1="${px}" y1="${zw}" x2="${W-px}" y2="${zw}" stroke="rgba(251,191,36,.5)"  stroke-width=".7" stroke-dasharray="4,3"/>
-    <line x1="${px}" y1="${zm}" x2="${W-px}" y2="${zm}" stroke="rgba(251,191,36,.35)" stroke-width=".7" stroke-dasharray="4,3"/>`;
+  let s = `<rect x="${px}" y="${py}"  width="${gW}" height="${zh-py}"  fill="rgba(220,60,60,.07)"/>
+    <rect x="${px}" y="${zh}" width="${gW}" height="${zw-zh}" fill="rgba(200,140,0,.06)"/>
+    <line x1="${px}" y1="${zh}" x2="${W-px}" y2="${zh}" stroke="rgba(220,60,60,.55)"  stroke-width=".8" stroke-dasharray="4,3"/>
+    <line x1="${px}" y1="${zw}" x2="${W-px}" y2="${zw}" stroke="rgba(200,140,0,.55)"  stroke-width=".8" stroke-dasharray="4,3"/>
+    <line x1="${px}" y1="${zm}" x2="${W-px}" y2="${zm}" stroke="rgba(200,140,0,.35)"  stroke-width=".8" stroke-dasharray="4,3"/>`;
   for (const h of [1,4,8,12,16,20,maxH]) {
     if (h>maxH) continue;
     const x=sx(h);
-    s += `<line x1="${x}" y1="${py}" x2="${x}" y2="${H-py}" stroke="rgba(255,255,255,.05)" stroke-width=".7"/>
-      <text x="${x}" y="${H-1}" text-anchor="middle" fill="#415e7a" font-size="9">${h}h</text>`;
+    s += `<line x1="${x}" y1="${py}" x2="${x}" y2="${H-py}" stroke="rgba(128,128,128,.15)" stroke-width=".7"/>
+      <text x="${x}" y="${H-1}" text-anchor="middle" fill="currentColor" opacity=".5" font-size="9">${h}h</text>`;
   }
   const spts = results.map((r,i)=>`${i===0?"M":"L"}${sx(r.hour).toFixed(1)},${sy(r.sepsis).toFixed(1)}`).join(" ");
   const rpts = results.map((r,i)=>`${i===0?"M":"L"}${sx(r.hour).toFixed(1)},${sy(r.resp).toFixed(1)}`).join(" ");
@@ -970,14 +1005,14 @@ function recordAlert(pid, result) {
   if (!cd?.alert_triggered) return;
   state.alertHistory.unshift({time:new Date().toLocaleTimeString(), patientId:pid, alertType:cd.alert_type, priority:cd.priority||"low"});
   if (state.alertHistory.length > 500) state.alertHistory.length = 500;
-  try { sessionStorage.setItem("icu_alerts", JSON.stringify(state.alertHistory)); } catch(_) {}
+  try { localStorage.setItem("icu_alerts", JSON.stringify(state.alertHistory)); } catch(_) {}
   renderAlertHistory();
   updateAlertCounter();
   const announcer = $("alert-announcer");
   if (announcer) announcer.textContent = `New alert: ${cd.alert_type} for patient ${pid}`;
 }
 function loadAlertHistory() {
-  try { const s=sessionStorage.getItem("icu_alerts"); if (s) state.alertHistory=JSON.parse(s); } catch(_) {}
+  try { const s=localStorage.getItem("icu_alerts"); if (s) state.alertHistory=JSON.parse(s); } catch(_) {}
   renderAlertHistory(); updateAlertCounter();
 }
 function renderAlertHistory() {
@@ -1099,6 +1134,11 @@ async function evaluatePatientSilent(id, win) {
   try {
     const result = await apiEvaluate(id, win || entry.window);
     state.patients.set(id, { ...state.patients.get(id), result, loadedAt: new Date() });
+    // Record alert frame for chart annotation
+    const alertFrame = state.patients.get(id)?.currentFrame;
+    if (result.clinical_decision?.alert_triggered && alertFrame) {
+      state.patients.set(id, { ...state.patients.get(id), alertFrame });
+    }
     recordAlert(id, result);
     updateCardScore(id);
     if (state.selectedId === id) renderSidebar(id);
@@ -1207,6 +1247,19 @@ function renderMetricsTab(tab) {
   if (tab === "overview") {
     body.innerHTML = buildMMOverview();
     requestAnimationFrame(drawMMComparisonChart);
+  } else if (tab === "ensemble") {
+    body.innerHTML = buildMMEnsembleDetail(_metricsData.ensemble);
+    body.querySelector(".mm-cal-load-btn")?.addEventListener("click", async () => {
+      const wrap = $("mm-cal-wrap");
+      if (!wrap) return;
+      wrap.innerHTML = '<div class="pm-loading"><div class="spinner-lg"></div><span>Loading…</span></div>';
+      try {
+        const cal = await apiFetch("/model-metrics/calibration");
+        wrap.innerHTML = drawCalibrationCurveSVG(cal);
+      } catch(e) {
+        wrap.innerHTML = `<p style="color:var(--red);font-size:11px">Failed: ${escHtml(e.message)}</p>`;
+      }
+    });
   } else {
     const m = _metricsData[tab];
     body.innerHTML = buildMMDetail(m, tab);
@@ -1215,6 +1268,56 @@ function renderMetricsTab(tab) {
       else drawMMFeatureChart(m.top_features);
     });
   }
+}
+
+// ── Ensemble detail ───────────────────────────────────────────────────────
+function buildMMEnsembleDetail(m) {
+  if (!m) return '<p class="empty-msg">Ensemble metrics not available.</p>';
+  const met = m.metrics || {};
+  const auc  = met.auc  != null ? met.auc.toFixed(4)               : "—";
+  const aprc = met.average_precision != null ? met.average_precision.toFixed(4) : "—";
+  const coefGru = m.coef_gru  != null ? m.coef_gru.toFixed(4)  : "—";
+  const coefXgb = m.coef_xgb  != null ? m.coef_xgb.toFixed(4)  : "—";
+  const intercept = m.intercept != null ? m.intercept.toFixed(4) : "—";
+  const formula = m.formula || "sigmoid(coef_gru × gru + coef_xgb × xgb + intercept)";
+  return `
+    <div class="mm-detail-layout">
+      <div class="mm-detail-left">
+        <div class="mm-section-hd">Sepsis Ensemble (GRU + XGB) · Validation Set</div>
+        <div class="mm-metric-list">
+          <div class="mm-metric-row"><span class="mm-mr-key">AUC-ROC</span><span class="mm-mr-val mm-c-teal">${auc}</span></div>
+          <div class="mm-metric-row"><span class="mm-mr-key">Avg Precision (AUPRC)</span><span class="mm-mr-val mm-c-teal">${aprc}</span></div>
+        </div>
+        <div class="mm-section-hd" style="margin-top:14px">Meta-Learner Coefficients</div>
+        <div class="mm-arch-grid">
+          <div class="mm-arch-row"><span>GRU coefficient</span><strong>${coefGru}</strong></div>
+          <div class="mm-arch-row"><span>XGBoost coefficient</span><strong>${coefXgb}</strong></div>
+          <div class="mm-arch-row"><span>Intercept</span><strong>${intercept}</strong></div>
+        </div>
+        <div class="mm-section-hd" style="margin-top:14px">Formula</div>
+        <div style="font-size:11px;color:var(--text2);font-family:monospace;padding:6px 0">${escHtml(formula)}</div>
+      </div>
+      <div class="mm-detail-right">
+        <div class="mm-section-hd">AUC vs Individual Models</div>
+        <div class="mm-metric-list">
+          ${["sepsis_gru","sepsis_xgb"].map(k => {
+            const em = _metricsData[k]?.metrics;
+            return em ? `<div class="mm-metric-row">
+              <span class="mm-mr-key">${_metricsData[k].name}</span>
+              <span class="mm-mr-val">AUC ${em.auc.toFixed(3)} · AUPRC ${em.average_precision.toFixed(3)}</span>
+            </div>` : "";
+          }).join("")}
+          <div class="mm-metric-row" style="border-top:1px solid var(--border1);padding-top:6px;margin-top:4px">
+            <span class="mm-mr-key" style="font-weight:600">Ensemble</span>
+            <span class="mm-mr-val mm-c-teal" style="font-weight:600">AUC ${auc} · AUPRC ${aprc}</span>
+          </div>
+        </div>
+        <div class="mm-section-hd">Calibration Transformation (Isotonic)</div>
+        <div id="mm-cal-wrap">
+          <button class="gt-btn mm-cal-load-btn" type="button" style="margin:8px 0">Load Calibration Curves</button>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────
@@ -1469,6 +1572,38 @@ function drawMMFeatureChart(features) {
   svg.innerHTML = out;
 }
 
+// ── Calibration curve SVG ─────────────────────────────────────────────────
+function drawCalibrationCurveSVG(cal) {
+  const models = Object.entries(cal).filter(([,v]) => v.available);
+  if (!models.length) return '<p class="empty-msg">No calibration data available.</p>';
+  const colors = {sepsis_gru:"#2dd4bf", sepsis_xgb:"#fbbf24", resp_gru:"#a78bfa"};
+  const W=460, H=180, pad=32;
+  const gW=W-pad*2, gH=H-pad*2;
+  const sx = v => pad + v*(gW);
+  const sy = v => H-pad - v*(gH);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px" preserveAspectRatio="xMidYMid meet">`;
+  // Grid and diagonal (perfect calibration reference)
+  svg += `<line x1="${pad}" y1="${pad}" x2="${W-pad}" y2="${H-pad}" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="4,3"/>`;
+  for (let v = 0; v <= 1; v += 0.25) {
+    svg += `<line x1="${sx(v)}" y1="${pad}" x2="${sx(v)}" y2="${H-pad}" stroke="rgba(255,255,255,.05)" stroke-width=".6"/>`;
+    svg += `<line x1="${pad}" y1="${sy(v)}" x2="${W-pad}" y2="${sy(v)}" stroke="rgba(255,255,255,.05)" stroke-width=".6"/>`;
+    svg += `<text x="${sx(v)}" y="${H-pad+10}" text-anchor="middle" fill="#415e7a" font-size="8">${v.toFixed(2)}</text>`;
+    svg += `<text x="${pad-4}" y="${sy(v)+3}" text-anchor="end" fill="#415e7a" font-size="8">${v.toFixed(2)}</text>`;
+  }
+  // Calibration curves
+  for (const [key, data] of models) {
+    const color = colors[key] || "#7a9bbf";
+    const pts = data.raw.map((r,i) => `${i===0?"M":"L"}${sx(r).toFixed(1)},${sy(data.calibrated[i]).toFixed(1)}`).join(" ");
+    svg += `<path d="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  }
+  svg += `</svg>`;
+  // Legend
+  const legend = models.map(([key]) =>
+    `<span style="font-size:10px;color:${colors[key]||"#7a9bbf"};margin-right:12px">■ ${key.replace("_"," ")}</span>`
+  ).join("");
+  return svg + `<div style="margin-top:4px">${legend}<span style="font-size:10px;color:var(--text3)">— — perfect calibration</span></div>`;
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────
 async function boot() {
   startClock();
@@ -1543,7 +1678,7 @@ $("close-sidebar")?.addEventListener("click", () => {
 $("run-timeline")?.addEventListener("click", () => { if (state.selectedId) runTimelineAnalysis(state.selectedId); });
 $("clear-alert-history")?.addEventListener("click", () => {
   state.alertHistory = [];
-  try { sessionStorage.removeItem("icu_alerts"); } catch(_) {}
+  try { localStorage.removeItem("icu_alerts"); } catch(_) {}
   renderAlertHistory(); updateAlertCounter();
 });
 $("grid-cols")?.addEventListener("change", e => applyGridCols(e.target.value));
@@ -1568,6 +1703,125 @@ $("step-back")?.addEventListener("click", () => _doStep(-1));
 $("step-forward")?.addEventListener("click", () => _doStep(+1));
 $("run-eval")?.addEventListener("click", reEvaluate);
 
+// ── Print / PDF export ────────────────────────────────────────────────────
+$("print-report")?.addEventListener("click", () => {
+  const id = state.selectedId;
+  if (!id) return;
+
+  // 1. Open all collapsed accordion sections
+  const accordions = [...document.querySelectorAll(".detail-sidebar details")];
+  const wasOpen = accordions.map(d => d.open);
+  accordions.forEach(d => { d.open = true; });
+
+  // 2. Show timeline section if data was generated
+  const timelineWasHidden = timelineSection?.classList.contains("hidden");
+  if (state.timelineData.length > 0 && timelineSection) {
+    timelineSection.classList.remove("hidden");
+  }
+
+  // 3. Inject print header with patient info
+  const entry  = state.patients.get(id);
+  const result = entry?.result;
+  const cd     = result?.clinical_decision;
+  const sofa   = result?.sofa;
+  let hdr = document.getElementById("print-report-header");
+  if (!hdr) {
+    hdr = document.createElement("div");
+    hdr.id = "print-report-header";
+    hdr.className = "print-only";
+    document.querySelector(".ds-header")?.insertAdjacentElement("afterend", hdr);
+  }
+  const sofaLine = sofa?.components_available
+    ? `<span>SOFA (partial)</span><strong>${sofa.total} — ${escHtml(sofa.interpretation)}</strong>`
+    : "";
+  hdr.innerHTML = `
+    <div class="prh-title">ICU Clinical Report</div>
+    <div class="prh-grid">
+      <span>Patient ID</span><strong>${escHtml(id)}</strong>
+      <span>Decision</span><strong>${escHtml(cd?.alert_type || "—")}</strong>
+      <span>Priority</span><strong>${escHtml(cd?.priority || "—")}</strong>
+      ${sofaLine}
+      <span>Last evaluated</span><strong>${escHtml(entry?.loadedAt?.toLocaleString() || "—")}</strong>
+      <span>Report printed</span><strong>${escHtml(new Date().toLocaleString())}</strong>
+    </div>
+    <hr class="prh-divider">`;
+
+  // 4. Allow one frame for DOM to settle before printing
+  requestAnimationFrame(() => {
+    window.print();
+
+    // 5. Restore state after print dialog closes
+    accordions.forEach((d, i) => { d.open = wasOpen[i]; });
+    if (timelineWasHidden && timelineSection) {
+      timelineSection.classList.add("hidden");
+    }
+  });
+});
+
+// ── Global keyboard shortcuts ─────────────────────────────────────────────
+document.addEventListener("keydown", e => {
+  // Don't fire shortcuts when typing in an input
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+  // Skip when a modal is open
+  const modalOpen = !$("patient-modal-backdrop")?.classList.contains("hidden") ||
+                    !$("metrics-modal-backdrop")?.classList.contains("hidden");
+  if (modalOpen) return;
+
+  const ids = [...state.patients.keys()];
+  const idx = state.selectedId ? ids.indexOf(state.selectedId) : -1;
+
+  if (e.key === "Escape") {
+    if (state.selectedId) {
+      state.selectedId = null;
+      if (detailSidebar) detailSidebar.classList.add("hidden");
+      renderGrid();
+    }
+  } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    e.preventDefault();
+    if (ids.length === 0) return;
+    const nextIdx = idx < ids.length - 1 ? idx + 1 : 0;
+    selectPatient(ids[nextIdx]);
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (ids.length === 0) return;
+    const prevIdx = idx > 0 ? idx - 1 : ids.length - 1;
+    selectPatient(ids[prevIdx]);
+  } else if (e.key === "r" || e.key === "R") {
+    if (state.selectedId) reEvaluate();
+  }
+});
+
+// ── WebSocket & Toast System ──────────────────────────────────────────────
+class SocketManager {
+  constructor() {
+    this.ws = null;
+    this.clientId = "icu_mon_" + Math.random().toString(36).substring(2, 7);
+    this.retryDelay = 2000;
+  }
+  connect() {
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${proto}//${location.host}/ws/${this.clientId}`;
+    console.log("[Socket]: Connecting to", url);
+    this.ws = new WebSocket(url);
+    this.ws.onopen = () => { console.log("[Socket]: Connected."); this.retryDelay = 2000; };
+    this.ws.onmessage = e => { try { this.handleMessage(JSON.parse(e.data)); } catch(err) { console.error("[Socket] message error:", err); } };
+    this.ws.onclose = () => {
+      console.warn("[Socket]: Disconnected. Retrying in", this.retryDelay, "ms");
+      setTimeout(() => { if (this.retryDelay < 30000) this.retryDelay *= 1.5; this.connect(); }, this.retryDelay);
+    };
+  }
+  handleMessage(msg) {
+    if (msg.type === "CLINICAL_ALERT") {
+      // If the patient is currently on the board, we trigger a silent refresh
+      if (state.patients.has(msg.patient_id)) {
+        evaluatePatientSilent(msg.patient_id);
+      }
+    }
+  }
+}
+
+const socket = new SocketManager();
+
 // Pause live evaluation (not vital tick) when tab is hidden — resumes on visibility
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
@@ -1579,7 +1833,10 @@ document.addEventListener("visibilitychange", () => {
         evaluatePatientSilent(id);
       }
     }
+    // ensure socket is healthy
+    if (!socket.ws || socket.ws.readyState === WebSocket.CLOSED) socket.connect();
   }
 });
 
+socket.connect();
 boot();

@@ -1,0 +1,178 @@
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.13.9
+Run started:2026-04-20 08:35:51.394721+00:00
+
+Test results:
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html
+   Location: src/agentic_icu\api\main.py:250:8
+249	                workflow.resp_failure_agent.gru_predictor.load()
+250	        except Exception:
+251	            pass
+252	        load_latency_ms = round((time.monotonic() - t0) * 1000, 1)
+
+--------------------------------------------------
+>> Issue: [B104:hardcoded_bind_all_interfaces] Possible binding to all interfaces.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-605 (https://cwe.mitre.org/data/definitions/605.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b104_hardcoded_bind_all_interfaces.html
+   Location: src/agentic_icu\config.py:15:46
+14	class RuntimeSettings:
+15	    host: str = os.getenv("AGENTIC_ICU_HOST", "0.0.0.0")
+16	    port: int = int(os.getenv("AGENTIC_ICU_PORT", "8000"))
+
+--------------------------------------------------
+>> Issue: [B403:blacklist] Consider possible security implications associated with pickle module.
+   Severity: Low   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b403-import-pickle
+   Location: src/agentic_icu\inference\ensemble.py:5:0
+4	import math
+5	import pickle
+6	import threading
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: src/agentic_icu\inference\ensemble.py:44:28
+43	                    warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
+44	                    model = pickle.load(fh)
+45	            metrics: dict = {}
+
+--------------------------------------------------
+>> Issue: [B403:blacklist] Consider possible security implications associated with pickle module.
+   Severity: Low   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b403-import-pickle
+   Location: src/agentic_icu\inference\sequence.py:4:0
+3	import json
+4	import pickle
+5	import threading
+
+--------------------------------------------------
+>> Issue: [B614:pytorch_load] Use of unsafe PyTorch load
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b614_pytorch_load.html
+   Location: src/agentic_icu\inference\sequence.py:93:40
+92	            # weights_only=False because the file is a full state-dict pickle (legacy format).
+93	            self._model.load_state_dict(torch.load(self.model_path, map_location=self.device, weights_only=False))
+94	            self._model.eval()
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: src/agentic_icu\inference\sequence.py:97:39
+96	                with self.calibrator_path.open("rb") as fh:
+97	                    self._calibrator = pickle.load(fh)
+98	                # Re-anchor the threshold to the calibrated probability space so that
+
+--------------------------------------------------
+>> Issue: [B403:blacklist] Consider possible security implications associated with pickle module.
+   Severity: Low   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b403-import-pickle
+   Location: src/agentic_icu\inference\tabular.py:5:0
+4	import logging
+5	import pickle
+6	import threading
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: src/agentic_icu\inference\tabular.py:50:39
+49	                with self.calibrator_path.open("rb") as fh:
+50	                    self._calibrator = pickle.load(fh)
+51	                # Re-anchor the threshold to calibrated probability space.
+
+--------------------------------------------------
+>> Issue: [B403:blacklist] Consider possible security implications associated with pickle module.
+   Severity: Low   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b403-import-pickle
+   Location: src/rebuild_training\kaggle_train_deterioration.py:35:0
+34	import math
+35	import pickle
+36	import random
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: src/rebuild_training\kaggle_train_deterioration.py:787:29
+786	        with xgb_cal_path.open("rb") as fh:
+787	            xgb_calibrator = pickle.load(fh)
+788	
+
+--------------------------------------------------
+>> Issue: [B614:pytorch_load] Use of unsafe PyTorch load
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b614_pytorch_load.html
+   Location: src/rebuild_training\kaggle_train_deterioration.py:821:28
+820	    ).to(device)
+821	    gru_net.load_state_dict(torch.load(gru_model_path, map_location=device, weights_only=False))
+822	    gru_net.eval()
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: src/rebuild_training\kaggle_train_deterioration.py:827:29
+826	        with gru_cal_path.open("rb") as fh:
+827	            gru_calibrator = pickle.load(fh)
+828	
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b110_try_except_pass.html
+   Location: src/rebuild_training\kaggle_train_deterioration.py:1225:8
+1224	            torch.cuda.empty_cache()
+1225	        except Exception:
+1226	            pass
+1227	        return torch.device("cpu")
+
+--------------------------------------------------
+>> Issue: [B614:pytorch_load] Use of unsafe PyTorch load
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b614_pytorch_load.html
+   Location: src/rebuild_training\kaggle_train_deterioration.py:1356:26
+1355	
+1356	    model.load_state_dict(torch.load(best_path, map_location=device))
+1357	    _, val_prob, val_true = evaluate_sequence_model(model, val_loader, device)
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 4224
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 6
+		Medium: 9
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 1
+		High: 14
+Files skipped (0):

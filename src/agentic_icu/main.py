@@ -5,7 +5,7 @@ import uvicorn
 from agentic_icu.config import settings
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     uvicorn.run(
         "agentic_icu.api.main:app",
         host=settings.host,
@@ -14,5 +14,5 @@ def main() -> None:
     )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

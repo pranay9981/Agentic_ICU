@@ -838,3 +838,100 @@ ol,ul{list-style:none}
   .sc-chip { padding: 3px 8px; font-size: 11px; }
   .summary-chips .sc-chip:not(.critical):not(.watch) { display: none; }
 }
+
+/* ── SOFA score ──────────────────────────────────────────────────────────── */
+.sofa-grid{display:flex;flex-direction:column;gap:2px;margin:6px 0}
+.sofa-row{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--surface2);border-radius:var(--r-s);font-size:11px}
+.sofa-lbl{color:var(--text3)}
+.sofa-val{font-weight:700;min-width:20px;text-align:right}
+.sofa-ok  {color:var(--green)}
+.sofa-warn{color:var(--amber)}
+.sofa-crit{color:var(--red)}
+.sofa-na  {color:var(--text3)}
+.sofa-caveat{font-size:10px;color:var(--text3);padding:4px 0;line-height:1.4}
+.dss-badge.sofa-low     {background:rgba(74,222,128,.1);color:var(--green);border-color:var(--green-d)}
+.dss-badge.sofa-moderate{background:rgba(251,191,36,.1);color:var(--amber);border-color:var(--amber-d)}
+.dss-badge.sofa-high    {background:rgba(248,113,113,.12);color:var(--red);border-color:var(--red-d)}
+.dss-badge.sofa-critical{background:rgba(248,113,113,.2);color:var(--red);border-color:var(--red-d)}
+
+/* ── Print-only header (hidden on screen) ───────────────────────────────── */
+.print-only { display: none; }
+
+/* ── Print / PDF export ─────────────────────────────────────────────────── */
+@media print {
+  /* Override every CSS token to a light theme — this cascades to ALL children
+     automatically, so we don't need per-element background overrides. */
+  :root {
+    --bg:       #ffffff;
+    --surface:  #f9f9f9;
+    --surface2: #f0f4f8;
+    --border:   #d0d8e4;
+    --border2:  #a8b8c8;
+    --text:     #111111;
+    --text2:    #333333;
+    --text3:    #666666;
+    --teal:     #0a8c7e;
+    --teal-d:   #0a8c7e;
+    --amber:    #8a6210;
+    --amber-d:  #8a6210;
+    --violet:   #5a3fa8;
+    --violet-d: #5a3fa8;
+    --red:      #cc0000;
+    --red-d:    #cc0000;
+    --green:    #1a6632;
+    --green-d:  #1a6632;
+    --blue:     #1a52a0;
+  }
+
+  html, body { background: #fff !important; color: #111 !important; overflow: visible !important; font-size: 11pt; }
+
+  /* Hide chrome — grid panel, nav buttons, modals */
+  .top-bar, .grid-panel, .ds-actions,
+  #print-report, #toggle-playback, #run-timeline, #step-back, #step-forward,
+  #close-sidebar, .modal-backdrop, .tl-progress { display: none !important; }
+
+  /* Show print-only header */
+  .print-only { display: block !important; }
+  .prh-title { font-size: 16pt; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .prh-grid {
+    display: grid; grid-template-columns: 140px 1fr; gap: 2px 12px;
+    font-size: 10pt; margin-bottom: 10px;
+    border: 1px solid #ccc; border-radius: 4px; padding: 8px 12px; background: #f9f9f9;
+  }
+  .prh-grid span { color: #555; }
+  .prh-grid strong { color: #111; }
+  .prh-divider { border: none; border-top: 1px solid #ccc; margin: 10px 0; }
+
+  /* Sidebar — make it fill the full page */
+  .icu-workspace { display: block !important; height: auto !important; }
+  .detail-sidebar {
+    position: static !important; width: 100% !important; height: auto !important;
+    border: none !important; overflow: visible !important; transform: none !important;
+  }
+  .detail-sidebar.hidden { display: block !important; transform: none !important; }
+  .ds-body { overflow: visible !important; max-height: none !important; }
+  .ds-header { border-bottom: 1px solid #ccc !important; padding-bottom: 8px; margin-bottom: 4px; }
+  .ds-patient-id { font-size: 18pt !important; }
+
+  /* Force accordion bodies open regardless of <details> open state */
+  details .da-body { display: block !important; }
+  summary::marker { display: none; }
+
+  /* Page-break hints */
+  .clin-card, .ds-section, .ds-accordion, .at { page-break-inside: avoid; }
+
+  /* Timeline — show inline with proper dimensions */
+  #timeline-section { page-break-inside: avoid; }
+  .tl-svg { height: 130px !important; border: 1px solid #ccc !important; }
+  .timeline-wrap { overflow: visible !important; }
+
+  /* Vital tile sparklines — explicit height so SVG renders at correct size */
+  .ts { height: 48px !important; }
+  .trend-grid-2 { gap: 4px; }
+
+  /* Score bars — keep them visible in muted print colours */
+  .at-bar-wrap { height: 5px !important; }
+
+  /* SHAP / saliency bars */
+  .sal-cell { opacity: 1 !important; }
+}

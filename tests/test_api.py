@@ -16,9 +16,10 @@ if str(SRC) not in sys.path:
 
 from agentic_icu.api.dependencies import get_workflow
 from agentic_icu.api.main import app
-
+from agentic_icu.domain.contracts import ModelAgentResult, SignalQualityResult
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _load_patient_window(patient_id: str, max_rows: int = 24) -> list[dict]:
     patient_path = ROOT / "data" / "raw" / f"{patient_id}.psv"
@@ -44,10 +45,10 @@ def _load_patient_window(patient_id: str, max_rows: int = 24) -> list[dict]:
 
 # ── Unit: ClinicalReasoner ────────────────────────────────────────────────────
 
+
 class TestClinicalReasoner(unittest.TestCase):
     def setUp(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner
-        from agentic_icu.domain.contracts import ModelAgentResult, SignalQualityResult
 
         self.policy = AlertPolicy()
         self.reasoner = ClinicalReasoner(self.policy)
@@ -55,23 +56,34 @@ class TestClinicalReasoner(unittest.TestCase):
         self.SignalQualityResult = SignalQualityResult
 
     def _sq_clear(self):
-        return self.SignalQualityResult(signal_valid=True, suppression_recommendation=False, suppression_mode="none")
+        return self.SignalQualityResult(
+            signal_valid=True, suppression_recommendation=False, suppression_mode="none"
+        )
 
     def _sq_full_suppress(self):
-        return self.SignalQualityResult(signal_valid=False, suppression_recommendation=True, suppression_mode="full")
+        return self.SignalQualityResult(
+            signal_valid=False, suppression_recommendation=True, suppression_mode="full"
+        )
 
     def _sq_partial_suppress(self):
         return self.SignalQualityResult(
-            signal_valid=True, suppression_recommendation=True, suppression_mode="partial",
-            artifact_type="soft_range_violation", artifact_affected_features=["Temp"],
+            signal_valid=True,
+            suppression_recommendation=True,
+            suppression_mode="partial",
+            artifact_type="soft_range_violation",
+            artifact_affected_features=["Temp"],
         )
 
     def _agent(self, score: float) -> "ModelAgentResult":
         dt = 0.5
         tr = score / dt
         return self.ModelAgentResult(
-            status="available", score=score, risk_band="high" if tr >= 1 else "low",
-            detail=f"score {score:.3f}", decision_threshold=dt, threshold_ratio=tr,
+            status="available",
+            score=score,
+            risk_band="high" if tr >= 1 else "low",
+            detail=f"score {score:.3f}",
+            decision_threshold=dt,
+            threshold_ratio=tr,
         )
 
     def test_full_suppression_blocks_alert(self) -> None:
@@ -79,7 +91,9 @@ class TestClinicalReasoner(unittest.TestCase):
             self._sq_full_suppress(), self._agent(0.99), self._agent(0.99)
         )
         self.assertFalse(decision.alert_triggered)
-        self.assertEqual(decision.alert_type, self.policy.suppressed_artifact_alert_type)
+        self.assertEqual(
+            decision.alert_type, self.policy.suppressed_artifact_alert_type
+        )
 
     def test_high_alert_triggers_on_extreme_sequence(self) -> None:
         decision, *_ = self.reasoner.decide(
@@ -118,16 +132,23 @@ class TestClinicalReasoner(unittest.TestCase):
         expected_ratio = suppressed_score / high_vitals.decision_threshold
         self.assertAlmostEqual(adj_vitals.threshold_ratio, expected_ratio, places=5)
         # Suppression log must appear
-        suppression_log = next((l for l in logs if "suppression" in l.message.lower()), None)
+        suppression_log = next(
+            (log_entry for log_entry in logs if "suppression" in log_entry.message.lower()), None
+        )
         self.assertIsNotNone(suppression_log)
         # Decision should still fire (0.665 >= medium threshold 0.55)
         self.assertTrue(decision.alert_triggered)
 
     def test_resp_high_alert_when_sepsis_stable(self) -> None:
         from agentic_icu.domain.contracts import ModelAgentResult
+
         resp_result = ModelAgentResult(
-            status="available", score=0.9, risk_band="high",
-            detail="resp score 0.9", decision_threshold=0.4, threshold_ratio=2.25,
+            status="available",
+            score=0.9,
+            risk_band="high",
+            detail="resp score 0.9",
+            decision_threshold=0.4,
+            threshold_ratio=2.25,
         )
         decision, *_ = self.reasoner.decide(
             self._sq_clear(), self._agent(0.1), self._agent(0.05), resp_result
@@ -137,6 +158,7 @@ class TestClinicalReasoner(unittest.TestCase):
 
     def test_no_available_scores_returns_models_unavailable(self) -> None:
         from agentic_icu.domain.contracts import ModelAgentResult
+
         unavailable = ModelAgentResult(status="unavailable", detail="no model")
         decision, *_ = self.reasoner.decide(self._sq_clear(), unavailable, unavailable)
         self.assertFalse(decision.alert_triggered)
@@ -145,27 +167,37 @@ class TestClinicalReasoner(unittest.TestCase):
     def test_resp_high_alert_when_sepsis_models_unavailable(self) -> None:
         """When both sepsis models are unavailable but resp score is high, a resp alert must still fire."""
         from agentic_icu.domain.contracts import ModelAgentResult
+
         unavailable = ModelAgentResult(status="unavailable", detail="no model")
         resp_result = ModelAgentResult(
-            status="available", score=0.9, risk_band="high",
-            detail="resp score 0.9", decision_threshold=0.4, threshold_ratio=2.25,
+            status="available",
+            score=0.9,
+            risk_band="high",
+            detail="resp score 0.9",
+            decision_threshold=0.4,
+            threshold_ratio=2.25,
         )
-        decision, *_ = self.reasoner.decide(self._sq_clear(), unavailable, unavailable, resp_result)
+        decision, *_ = self.reasoner.decide(
+            self._sq_clear(), unavailable, unavailable, resp_result
+        )
         self.assertTrue(decision.alert_triggered)
         self.assertEqual(decision.alert_type, self.policy.resp_high_alert_type)
 
     def test_alert_policy_rejects_threshold_above_one(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         with self.assertRaises(ValueError):
             AlertPolicy(high_alert_extreme_sequence_score_threshold=1.5)
 
     def test_alert_policy_rejects_negative_threshold(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         with self.assertRaises(ValueError):
             AlertPolicy(medium_alert_sequence_score_threshold=-0.1)
 
     def test_alert_policy_accepts_valid_probability_thresholds(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         policy = AlertPolicy(
             high_alert_extreme_sequence_score_threshold=0.9,
             medium_alert_sequence_score_threshold=0.5,
@@ -174,31 +206,36 @@ class TestClinicalReasoner(unittest.TestCase):
 
     def test_alert_policy_accepts_none_thresholds(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         policy = AlertPolicy(high_alert_max_score_threshold=None)
         self.assertIsNone(policy.high_alert_max_score_threshold)
 
     def test_alert_policy_rejects_suppression_factor_above_one(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         with self.assertRaises(ValueError):
             AlertPolicy(partial_suppression_factor=1.5)
 
     def test_alert_policy_rejects_suppression_factor_below_zero(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         with self.assertRaises(ValueError):
             AlertPolicy(partial_suppression_factor=-0.1)
 
     def test_alert_policy_accepts_valid_suppression_factor(self) -> None:
         from agentic_icu.agents.reasoner import AlertPolicy
+
         policy = AlertPolicy(partial_suppression_factor=0.5)
         self.assertEqual(policy.partial_suppression_factor, 0.5)
 
 
 # ── Unit: RuntimePreprocessor ─────────────────────────────────────────────────
 
+
 class TestRuntimePreprocessor(unittest.TestCase):
     def setUp(self) -> None:
-        from agentic_icu.preprocessing.windowing import RuntimePreprocessor
         from agentic_icu.config import settings
+        from agentic_icu.preprocessing.windowing import RuntimePreprocessor
 
         self.preprocessor = RuntimePreprocessor(
             train_statistics_path=settings.train_statistics_path,
@@ -208,12 +245,21 @@ class TestRuntimePreprocessor(unittest.TestCase):
 
     def _make_records(self, n: int = 24) -> list:
         from agentic_icu.domain.contracts import ObservationRecord
+
         return [
-            ObservationRecord(values={
-                "HR": 80.0, "O2Sat": 97.0, "SBP": 120.0, "DBP": 70.0,
-                "MAP": 87.0, "Resp": 16.0, "Temp": 37.0, "FiO2": 0.21,
-                "ICULOS": float(i + 1),
-            })
+            ObservationRecord(
+                values={
+                    "HR": 80.0,
+                    "O2Sat": 97.0,
+                    "SBP": 120.0,
+                    "DBP": 70.0,
+                    "MAP": 87.0,
+                    "Resp": 16.0,
+                    "Temp": 37.0,
+                    "FiO2": 0.21,
+                    "ICULOS": float(i + 1),
+                }
+            )
             for i in range(n)
         ]
 
@@ -222,20 +268,30 @@ class TestRuntimePreprocessor(unittest.TestCase):
         records = self._make_records(24)
         tensor = self.preprocessor.build_sequence_tensor(records)
         self.assertEqual(tensor.shape[0], self.preprocessor.sequence_hours)
-        self.assertGreater(self.preprocessor.sequence_hours, self.preprocessor.observation_hours)
+        self.assertGreater(
+            self.preprocessor.sequence_hours, self.preprocessor.observation_hours
+        )
 
     def test_tabular_features_includes_composite_features(self) -> None:
         """Composite clinical features added in Phase 1.3 must be present."""
         records = self._make_records(24)
         features = self.preprocessor.build_tabular_features(records)
-        for key in ("shock_index", "pulse_pressure", "qsofa_score", "HR__slope_6h", "map_computed"):
+        for key in (
+            "shock_index",
+            "pulse_pressure",
+            "qsofa_score",
+            "HR__slope_6h",
+            "map_computed",
+        ):
             self.assertIn(key, features, f"Missing composite feature: {key}")
 
     def test_tabular_feature_count_matches_training(self) -> None:
         """Feature count must be 292 (matching xgboost_metrics.json feature_count)."""
         records = self._make_records(24)
         features = self.preprocessor.build_tabular_features(records)
-        self.assertEqual(len(features), 292, f"Got {len(features)} features, expected 292")
+        self.assertEqual(
+            len(features), 292, f"Got {len(features)} features, expected 292"
+        )
 
     def test_sequence_tensor_shape_with_short_window(self) -> None:
         """Short windows must be padded to sequence_hours."""
@@ -245,7 +301,12 @@ class TestRuntimePreprocessor(unittest.TestCase):
 
     def test_shock_index_is_correct(self) -> None:
         from agentic_icu.domain.contracts import ObservationRecord
-        records = [ObservationRecord(values={"HR": 100.0, "SBP": 200.0, "DBP": 80.0, "ICULOS": 1.0})]
+
+        records = [
+            ObservationRecord(
+                values={"HR": 100.0, "SBP": 200.0, "DBP": 80.0, "ICULOS": 1.0}
+            )
+        ]
         features = self.preprocessor.build_tabular_features(records)
         self.assertAlmostEqual(features["shock_index"], 0.5, places=5)
 
@@ -253,6 +314,7 @@ class TestRuntimePreprocessor(unittest.TestCase):
         """When ICULOS is missing from record.values, it must default to the sequential row index (1-based).
         Regression test for the dict.get() NaN-key bug fixed in windowing.py."""
         from agentic_icu.domain.contracts import ObservationRecord
+
         # Records deliberately omit ICULOS — the fallback must assign hour 1, 2, 3.
         records = [
             ObservationRecord(values={"HR": 80.0, "SBP": 120.0}),
@@ -267,6 +329,7 @@ class TestRuntimePreprocessor(unittest.TestCase):
     def test_iculos_from_record_values_takes_precedence(self) -> None:
         """When ICULOS is present in record.values, that value must be used, not the index."""
         from agentic_icu.domain.contracts import ObservationRecord
+
         records = [
             ObservationRecord(values={"HR": 80.0, "ICULOS": 48.0}),
             ObservationRecord(values={"HR": 82.0, "ICULOS": 49.0}),
@@ -284,48 +347,62 @@ class TestRuntimePreprocessor(unittest.TestCase):
     def test_concurrent_load_is_safe(self) -> None:
         """Concurrent calls to load() must not corrupt state or raise."""
         import threading as _threading
-        from agentic_icu.preprocessing.windowing import RuntimePreprocessor
+
         from agentic_icu.config import settings
+        from agentic_icu.preprocessing.windowing import RuntimePreprocessor
+
         preprocessor = RuntimePreprocessor(
             train_statistics_path=settings.train_statistics_path,
             pipeline_config_path=settings.pipeline_config_path,
         )
         errors: list[Exception] = []
+
         def _load():
             try:
                 preprocessor.load()
             except Exception as exc:
                 errors.append(exc)
+
         threads = [_threading.Thread(target=_load) for _ in range(8)]
-        for t in threads: t.start()
-        for t in threads: t.join()
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
         self.assertFalse(errors, f"Concurrent load raised: {errors}")
         self.assertIsNotNone(preprocessor._stats)
 
     def test_concurrent_gru_load_is_safe(self) -> None:
         """Concurrent calls to SequenceInference.load() must not corrupt model state."""
         import threading as _threading
+
         from agentic_icu.api.dependencies import get_workflow
+
         predictor = get_workflow().vitals_agent.predictor
         # Reset to unloaded state is not safe in tests — just verify idempotent second call
         errors: list[Exception] = []
+
         def _load():
             try:
                 predictor.load()
             except Exception as exc:
                 errors.append(exc)
+
         threads = [_threading.Thread(target=_load) for _ in range(4)]
-        for t in threads: t.start()
-        for t in threads: t.join()
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
         self.assertFalse(errors, f"Concurrent GRU load raised: {errors}")
         self.assertIsNotNone(predictor._model)
 
 
 # ── Unit: SignalQualityAgent ──────────────────────────────────────────────────
 
+
 class TestSignalQualityAgent(unittest.TestCase):
     def setUp(self) -> None:
         from agentic_icu.agents.signal_quality import SignalQualityAgent
+
         self.agent = SignalQualityAgent()
 
     def _eval(self, window: list[dict]) -> tuple:
@@ -333,7 +410,14 @@ class TestSignalQualityAgent(unittest.TestCase):
         return result, logs
 
     def _row(self, **kw) -> dict:
-        base = {"HR": 80.0, "SBP": 120.0, "DBP": 70.0, "O2Sat": 97.0, "Resp": 16.0, "Temp": 37.0}
+        base = {
+            "HR": 80.0,
+            "SBP": 120.0,
+            "DBP": 70.0,
+            "O2Sat": 97.0,
+            "Resp": 16.0,
+            "Temp": 37.0,
+        }
         base.update(kw)
         return base
 
@@ -343,7 +427,7 @@ class TestSignalQualityAgent(unittest.TestCase):
         self.assertEqual(result.suppression_mode, "none")
 
     def test_impossible_hr_triggers_full_suppression(self) -> None:
-        window = [self._row(), self._row(HR=5.0)]   # 5 bpm < 15 lower bound
+        window = [self._row(), self._row(HR=5.0)]  # 5 bpm < 15 lower bound
         result, _ = self._eval(window)
         self.assertFalse(result.signal_valid)
         self.assertEqual(result.artifact_type, "impossible_hr")
@@ -410,8 +494,13 @@ class TestSignalQualityAgent(unittest.TestCase):
         # 5+ consecutive identical Resp values → flatline → partial suppression (Resp is not hard-block).
         # O2Sat alternates so it does not trigger a hard flatline first.
         rows = [
-            {"HR": float(70 + i), "SBP": float(115 + i), "DBP": 70.0,
-             "O2Sat": float(96 + i % 2), "Resp": 16.0}
+            {
+                "HR": float(70 + i),
+                "SBP": float(115 + i),
+                "DBP": 70.0,
+                "O2Sat": float(96 + i % 2),
+                "Resp": 16.0,
+            }
             for i in range(5)
         ]
         result, _ = self._eval(rows)
@@ -431,22 +520,25 @@ class TestSignalQualityAgent(unittest.TestCase):
         # Vary HR, SBP, O2Sat, Resp so no flatline fires; keep jumps small so no
         # HR-jump or isolated-BP-drop check fires either.
         window = [
-            self._row(HR=float(75 + i), SBP=float(115 + i),
-                      O2Sat=float(96 + i % 3), Resp=float(14 + i % 3))
+            self._row(
+                HR=float(75 + i),
+                SBP=float(115 + i),
+                O2Sat=float(96 + i % 3),
+                Resp=float(14 + i % 3),
+            )
             for i in range(6)
         ]
         result, logs = self._eval(window)
         self.assertTrue(result.signal_valid)
         self.assertFalse(result.suppression_recommendation)
         self.assertEqual(result.suppression_mode, "none")
-        self.assertTrue(any("passed" in l.message.lower() for l in logs))
+        self.assertTrue(any("passed" in log_entry.message.lower() for log_entry in logs))
 
     def test_spo2_paradox_uses_window_hr_stability(self) -> None:
         """SpO2/HR paradox check should fire when HR is stable over the full window, not just 2 rows."""
         # O2Sat alternates 74/75 (both < 80) to avoid flatline; HR varies by 2 BPM total.
         window = [
-            self._row(HR=float(75 + i % 3), O2Sat=float(74 + i % 2))
-            for i in range(6)
+            self._row(HR=float(75 + i % 3), O2Sat=float(74 + i % 2)) for i in range(6)
         ]
         result, _ = self._eval(window)
         self.assertEqual(result.artifact_type, "spo2_hr_paradox")
@@ -457,8 +549,12 @@ class TestSignalQualityAgent(unittest.TestCase):
         # O2Sat alternates 81/83 (above paradox threshold of 80, below 85) to avoid spo2_hr_paradox.
         # SBP and Resp are varied to avoid triggering the flatline check (step 8) before step 9.
         window = [
-            self._row(HR=float(78 + i % 2), O2Sat=float(81 + i % 2 * 2),
-                      SBP=float(115 + i), Resp=float(14 + i % 3))
+            self._row(
+                HR=float(78 + i % 2),
+                O2Sat=float(81 + i % 2 * 2),
+                SBP=float(115 + i),
+                Resp=float(14 + i % 3),
+            )
             for i in range(5)
         ]
         result, _ = self._eval(window)
@@ -478,10 +574,12 @@ class TestSignalQualityAgent(unittest.TestCase):
 
 # ── Unit: Calibrator application ──────────────────────────────────────────────
 
+
 class TestCalibratorThreshold(unittest.TestCase):
     def test_sequence_threshold_in_calibrated_space(self) -> None:
         """decision_threshold must return calibrated value when calibrator is loaded."""
         from agentic_icu.api.dependencies import get_workflow
+
         wf = get_workflow()
         predictor = wf.vitals_agent.predictor
         predictor.load()
@@ -491,11 +589,16 @@ class TestCalibratorThreshold(unittest.TestCase):
         self.assertIsNotNone(threshold)
         # Raw threshold is 0.00138 — calibrated threshold must differ and be > raw
         raw_threshold = predictor.metrics["threshold_selection"]["threshold"]
-        self.assertNotAlmostEqual(threshold, raw_threshold, places=4,
-            msg="Calibrated threshold should differ from raw threshold")
+        self.assertNotAlmostEqual(
+            threshold,
+            raw_threshold,
+            places=4,
+            msg="Calibrated threshold should differ from raw threshold",
+        )
 
     def test_xgboost_threshold_in_calibrated_space(self) -> None:
         from agentic_icu.api.dependencies import get_workflow
+
         wf = get_workflow()
         predictor = wf.lab_agent.predictor
         predictor.load()
@@ -511,6 +614,7 @@ class TestCalibratorThreshold(unittest.TestCase):
 
 
 # ── Integration: API ──────────────────────────────────────────────────────────
+
 
 class ApiIntegrationTests(unittest.TestCase):
     @classmethod
@@ -548,8 +652,10 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertLess(seq_thresh, 1.0)
 
     def test_latest_alert_policy_report_returns_404_when_absent(self) -> None:
-        response = self.client.get("/reports/alert-policy-latest")
-        self.assertEqual(response.status_code, 404)
+        from unittest.mock import patch
+        with patch("agentic_icu.api.main.latest_alert_policy_report_path", side_effect=FileNotFoundError("No report")):
+            response = self.client.get("/reports/alert-policy-latest")
+            self.assertEqual(response.status_code, 404)
 
     def test_demo_patient_endpoint_returns_window(self) -> None:
         response = self.client.get("/demo-patient/p000018")
@@ -604,7 +710,9 @@ class ApiIntegrationTests(unittest.TestCase):
         """p000011 has a signal artifact — vitals/lab must be unavailable (skipped)."""
         payload = self.evaluate_patient("p000011")
         self.assertFalse(payload["clinical_decision"]["alert_triggered"])
-        self.assertEqual(payload["clinical_decision"]["alert_type"], "Suppressed Artifact")
+        self.assertEqual(
+            payload["clinical_decision"]["alert_type"], "Suppressed Artifact"
+        )
         # With the workflow short-circuit fix, suppressed patients get status=unavailable
         self.assertEqual(payload["vitals_agent"]["status"], "unavailable")
         self.assertEqual(payload["lab_agent"]["status"], "unavailable")
@@ -632,7 +740,11 @@ class ApiIntegrationTests(unittest.TestCase):
         total = sum(weights)
         self.assertAlmostEqual(total, 1.0, places=2)
         # Uniform fallback produces identical values; real gradients vary
-        self.assertGreater(max(weights) - min(weights), 1e-6, "Saliency weights are uniform — backward pass may have failed")
+        self.assertGreater(
+            max(weights) - min(weights),
+            1e-6,
+            "Saliency weights are uniform — backward pass may have failed",
+        )
         self.assertIsInstance(vitals["explanation"], str)
         self.assertGreater(len(vitals["explanation"]), 0)
 
@@ -648,7 +760,11 @@ class ApiIntegrationTests(unittest.TestCase):
         )
         total = sum(weights)
         self.assertAlmostEqual(total, 1.0, places=2)
-        self.assertGreater(max(weights) - min(weights), 1e-6, "Resp saliency is uniform — backward pass may have failed")
+        self.assertGreater(
+            max(weights) - min(weights),
+            1e-6,
+            "Resp saliency is uniform — backward pass may have failed",
+        )
 
     def test_patients_search_bounds(self) -> None:
         """Negative offset and zero limit must be rejected."""
@@ -660,15 +776,34 @@ class ApiIntegrationTests(unittest.TestCase):
         # Temp=50°C is above the 43°C physiological upper bound → soft_range_violation → partial suppression.
         # HR/SBP/O2Sat are in-range so full suppression does not fire first.
         window = [
-            {"values": {"HR": 80.0, "SBP": 120.0, "DBP": 70.0, "O2Sat": 97.0,
-                        "Resp": 16.0, "Temp": 50.0, "ICULOS": float(i + 1)}}
+            {
+                "values": {
+                    "HR": 80.0,
+                    "SBP": 120.0,
+                    "DBP": 70.0,
+                    "O2Sat": 97.0,
+                    "Resp": 16.0,
+                    "Temp": 50.0,
+                    "ICULOS": float(i + 1),
+                }
+            }
             for i in range(2)
         ]
-        response = self.client.post("/evaluate", json={"patient_id": "partial_suppression_test", "observation_window": window})
+        response = self.client.post(
+            "/evaluate",
+            json={
+                "patient_id": "partial_suppression_test",
+                "observation_window": window,
+            },
+        )
         self.assertEqual(response.status_code, 200)
         body = response.json()
         sq = body["signal_quality"]
-        self.assertEqual(sq["suppression_mode"], "partial", "Signal quality should be partial — check window construction")
+        self.assertEqual(
+            sq["suppression_mode"],
+            "partial",
+            "Signal quality should be partial — check window construction",
+        )
         va = body["vitals_agent"]
         la = body["lab_agent"]
         self.assertEqual(va["status"], "available")
@@ -678,12 +813,18 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertIn("suppression-adjusted", la["detail"])
         # threshold_ratio must be consistent with score/threshold (server-computed)
         if va["score"] is not None and va["decision_threshold"]:
-            self.assertAlmostEqual(va["threshold_ratio"], va["score"] / va["decision_threshold"], places=4)
+            self.assertAlmostEqual(
+                va["threshold_ratio"], va["score"] / va["decision_threshold"], places=4
+            )
 
     def test_evaluate_ensemble_agent_in_response(self) -> None:
         """ensemble_agent must appear in /evaluate response with status and score in [0,1]."""
         payload = self.evaluate_patient("p000001")
-        self.assertIn("ensemble_agent", payload, "ensemble_agent field missing from /evaluate response")
+        self.assertIn(
+            "ensemble_agent",
+            payload,
+            "ensemble_agent field missing from /evaluate response",
+        )
         ea = payload["ensemble_agent"]
         self.assertIn("status", ea)
         if ea["status"] == "available":
@@ -706,10 +847,14 @@ class ApiIntegrationTests(unittest.TestCase):
             medium_alert_tabular_score_threshold=None,
         )
         reasoner = ClinicalReasoner(policy)
-        sq = SignalQualityResult(signal_valid=True, suppression_recommendation=False, suppression_mode="none")
+        sq = SignalQualityResult(
+            signal_valid=True, suppression_recommendation=False, suppression_mode="none"
+        )
         unavailable = ModelAgentResult(status="unavailable", detail="n/a")
 
-        decision, logs, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.70)
+        decision, logs, *_ = reasoner.decide(
+            sq, unavailable, unavailable, ensemble_score=0.70
+        )
         self.assertTrue(decision.alert_triggered)
         self.assertIn("ensemble", decision.rationale.lower())
 
@@ -727,10 +872,14 @@ class ApiIntegrationTests(unittest.TestCase):
             medium_alert_tabular_score_threshold=None,
         )
         reasoner = ClinicalReasoner(policy)
-        sq = SignalQualityResult(signal_valid=True, suppression_recommendation=False, suppression_mode="none")
+        sq = SignalQualityResult(
+            signal_valid=True, suppression_recommendation=False, suppression_mode="none"
+        )
         unavailable = ModelAgentResult(status="unavailable", detail="n/a")
 
-        decision, logs, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.90)
+        decision, logs, *_ = reasoner.decide(
+            sq, unavailable, unavailable, ensemble_score=0.90
+        )
         self.assertTrue(decision.alert_triggered)
         self.assertEqual(decision.priority, "high")
         self.assertIn("ensemble", decision.rationale.lower())
@@ -751,18 +900,27 @@ class ApiIntegrationTests(unittest.TestCase):
         )
         reasoner = ClinicalReasoner(policy)
         sq = SignalQualityResult(
-            signal_valid=True, suppression_recommendation=True, suppression_mode="partial",
-            artifact_type="soft_range_violation", artifact_affected_features=["Temp"],
+            signal_valid=True,
+            suppression_recommendation=True,
+            suppression_mode="partial",
+            artifact_type="soft_range_violation",
+            artifact_affected_features=["Temp"],
         )
         unavailable = ModelAgentResult(status="unavailable", detail="n/a")
 
         # 0.90 * 0.7 = 0.63 → still >= 0.55 (medium), but < 0.80 (high)
-        decision, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.90)
+        decision, *_ = reasoner.decide(
+            sq, unavailable, unavailable, ensemble_score=0.90
+        )
         self.assertTrue(decision.alert_triggered)
-        self.assertNotEqual(decision.priority, "high")  # penalty should drop it from high
+        self.assertNotEqual(
+            decision.priority, "high"
+        )  # penalty should drop it from high
 
         # 0.70 * 0.7 = 0.49 → < 0.55, should NOT trigger
-        decision2, *_ = reasoner.decide(sq, unavailable, unavailable, ensemble_score=0.70)
+        decision2, *_ = reasoner.decide(
+            sq, unavailable, unavailable, ensemble_score=0.70
+        )
         self.assertFalse(decision2.alert_triggered)
 
     def test_ensemble_metrics_in_model_metrics_endpoint(self) -> None:
@@ -800,7 +958,9 @@ class ApiIntegrationTests(unittest.TestCase):
         body = response.json()
         self.assertIn("patients", body)
         self.assertIsInstance(body["patients"], list)
-        self.assertGreater(len(body["patients"]), 0, "No demo patients available in data dir")
+        self.assertGreater(
+            len(body["patients"]), 0, "No demo patients available in data dir"
+        )
         for p in body["patients"]:
             self.assertIn("id", p)
             self.assertIn("label", p)
@@ -809,7 +969,9 @@ class ApiIntegrationTests(unittest.TestCase):
     def test_explain_respects_signal_quality_suppression(self) -> None:
         """On a fully suppressed window /explain must return unavailable explanations, not SHAP on corrupt data."""
         window = _load_patient_window("p000011", 24)
-        response = self.client.post("/explain", json={"patient_id": "p000011", "observation_window": window})
+        response = self.client.post(
+            "/explain", json={"patient_id": "p000011", "observation_window": window}
+        )
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["lab_explanation"]["status"], "unavailable")
@@ -819,6 +981,7 @@ class ApiIntegrationTests(unittest.TestCase):
 
 # ── Integration: API error paths ──────────────────────────────────────────────
 
+
 class ApiErrorPathTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -826,18 +989,28 @@ class ApiErrorPathTests(unittest.TestCase):
         cls.client = TestClient(app)
 
     def test_empty_observation_window_returns_422(self) -> None:
-        response = self.client.post("/evaluate", json={"patient_id": "p000001", "observation_window": []})
+        response = self.client.post(
+            "/evaluate", json={"patient_id": "p000001", "observation_window": []}
+        )
         self.assertEqual(response.status_code, 422)
         self.assertIn("error", response.json())
 
     def test_oversized_observation_window_returns_422(self) -> None:
         window = [{"values": {"HR": 80.0}} for _ in range(169)]
-        response = self.client.post("/evaluate", json={"patient_id": "p000001", "observation_window": window})
+        response = self.client.post(
+            "/evaluate", json={"patient_id": "p000001", "observation_window": window}
+        )
         self.assertEqual(response.status_code, 422)
         self.assertIn("error", response.json())
 
     def test_blank_patient_id_returns_422(self) -> None:
-        response = self.client.post("/evaluate", json={"patient_id": "   ", "observation_window": [{"values": {"HR": 80.0}}]})
+        response = self.client.post(
+            "/evaluate",
+            json={
+                "patient_id": "   ",
+                "observation_window": [{"values": {"HR": 80.0}}],
+            },
+        )
         self.assertEqual(response.status_code, 422)
         self.assertIn("error", response.json())
 
@@ -847,17 +1020,32 @@ class ApiErrorPathTests(unittest.TestCase):
         self.assertIn("error", response.json())
 
     def test_malformed_json_returns_422(self) -> None:
-        response = self.client.post("/evaluate", content=b"not-valid-json", headers={"Content-Type": "application/json"})
+        response = self.client.post(
+            "/evaluate",
+            content=b"not-valid-json",
+            headers={"Content-Type": "application/json"},
+        )
         self.assertEqual(response.status_code, 422)
 
     def test_500_does_not_leak_internal_details(self) -> None:
         """The global 500 handler must not expose stack traces or internal paths."""
         from unittest.mock import patch
+
         # raise_server_exceptions=False prevents TestClient from re-raising; lets
         # the FastAPI exception handler return the 500 JSON response instead.
         safe_client = TestClient(app, raise_server_exceptions=False)
-        with patch.object(get_workflow(), "evaluate", side_effect=RuntimeError("secret internal path /models/weights")):
-            response = safe_client.post("/evaluate", json={"patient_id": "p000001", "observation_window": [{"values": {"HR": 80.0}}]})
+        with patch.object(
+            get_workflow(),
+            "evaluate",
+            side_effect=RuntimeError("secret internal path /models/weights"),
+        ):
+            response = safe_client.post(
+                "/evaluate",
+                json={
+                    "patient_id": "p000001",
+                    "observation_window": [{"values": {"HR": 80.0}}],
+                },
+            )
         self.assertEqual(response.status_code, 500)
         body = response.json()
         self.assertNotIn("secret internal path", str(body))
@@ -865,7 +1053,9 @@ class ApiErrorPathTests(unittest.TestCase):
 
     def test_explain_endpoint_returns_contributions(self) -> None:
         window = _load_patient_window("p000018", 24)
-        response = self.client.post("/explain", json={"patient_id": "p000018", "observation_window": window})
+        response = self.client.post(
+            "/explain", json={"patient_id": "p000018", "observation_window": window}
+        )
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["lab_explanation"]["status"], "available")
@@ -877,7 +1067,9 @@ class ApiErrorPathTests(unittest.TestCase):
         """Patient IDs with path traversal or special chars must be rejected before hitting filesystem."""
         for bad_id in ("../etc/passwd", "p000001; rm -rf /", "p 001"):
             response = self.client.get(f"/demo-patient/{bad_id}")
-            self.assertIn(response.status_code, (404, 422), f"Expected 404/422 for id {bad_id!r}")
+            self.assertIn(
+                response.status_code, (404, 422), f"Expected 404/422 for id {bad_id!r}"
+            )
 
     def test_security_headers_present(self) -> None:
         """Security headers must be set on all responses."""
@@ -893,6 +1085,7 @@ class ApiErrorPathTests(unittest.TestCase):
     def test_rate_limit_returns_429(self) -> None:
         """Exceeding rate limit on /evaluate must return 429 with Retry-After header."""
         import agentic_icu.api.main as main_mod
+
         orig = main_mod._RL_MAX_REQUESTS
         main_mod._RL_MAX_REQUESTS = 2
         main_mod._rl_counters.clear()
@@ -916,6 +1109,7 @@ class ApiErrorPathTests(unittest.TestCase):
     def test_explain_rate_limit_returns_429(self) -> None:
         """Rate limit must also apply to /explain, not just /evaluate."""
         import agentic_icu.api.main as main_mod
+
         orig = main_mod._RL_MAX_REQUESTS
         main_mod._RL_MAX_REQUESTS = 2
         main_mod._rl_counters.clear()
@@ -936,8 +1130,10 @@ class ApiErrorPathTests(unittest.TestCase):
 
     def test_rate_limit_prunes_empty_counters(self) -> None:
         """After all timestamps expire, the counter key must be pruned from the dict."""
-        import agentic_icu.api.main as main_mod
         import time as time_mod
+
+        import agentic_icu.api.main as main_mod
+
         main_mod._rl_counters.clear()
         window = [{"values": {"HR": 80.0, "ICULOS": 1.0}}]
         body = {"patient_id": "prune_test", "observation_window": window}
@@ -961,9 +1157,11 @@ class ApiErrorPathTests(unittest.TestCase):
 
 # ── Auth middleware ───────────────────────────────────────────────────────────
 
+
 class ApiKeyMiddlewareTests(unittest.TestCase):
     def setUp(self) -> None:
         import agentic_icu.api.main as main_mod
+
         self._orig = main_mod._API_KEY
         main_mod._API_KEY = "test-secret-key"
         get_workflow.cache_clear()
@@ -971,6 +1169,7 @@ class ApiKeyMiddlewareTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         import agentic_icu.api.main as main_mod
+
         main_mod._API_KEY = self._orig
 
     def test_missing_key_returns_401(self) -> None:
@@ -983,7 +1182,9 @@ class ApiKeyMiddlewareTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_correct_key_is_accepted(self) -> None:
-        response = self.client.get("/patients", headers={"X-API-Key": "test-secret-key"})
+        response = self.client.get(
+            "/patients", headers={"X-API-Key": "test-secret-key"}
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_health_is_exempt_from_auth(self) -> None:
@@ -996,6 +1197,7 @@ class ApiKeyMiddlewareTests(unittest.TestCase):
 
     def test_no_key_env_var_allows_all_requests(self) -> None:
         import agentic_icu.api.main as main_mod
+
         main_mod._API_KEY = ""
         response = self.client.get("/patients")
         self.assertEqual(response.status_code, 200)

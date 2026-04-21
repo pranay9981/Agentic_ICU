@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import pickle
 import threading
 from pathlib import Path
@@ -9,6 +10,8 @@ from typing import Optional
 import numpy as np
 import torch
 import torch.nn as nn
+
+logger = logging.getLogger(__name__)
 
 _cudnn_lock = threading.Lock()
 
@@ -48,7 +51,9 @@ class SequenceGRU(nn.Module):
 
 
 class SequenceInference:
-    def __init__(self, model_path: str, metrics_path: str, calibrator_path: Optional[str] = None) -> None:
+    def __init__(
+        self, model_path: str, metrics_path: str, calibrator_path: Optional[str] = None
+    ) -> None:
         self.model_path = Path(model_path)
         self.metrics_path = Path(metrics_path)
         self.calibrator_path = Path(calibrator_path) if calibrator_path else None
@@ -89,20 +94,33 @@ class SequenceInference:
                 dropout=dropout,
                 bidirectional=bidirectional,
             ).to(self.device)
-            # weights_only=False because the file is a full state-dict pickle (legacy format).
-            self._model.load_state_dict(torch.load(self.model_path, map_location=self.device, weights_only=False))
+            # Enforce safe PyTorch loading format
+            self._model.load_state_dict(
+                torch.load(
+                    self.model_path, map_location=self.device, weights_only=True
+                )
+            )
             self._model.eval()
             if self.calibrator_path and self.calibrator_path.exists():
                 with self.calibrator_path.open("rb") as fh:
-                    self._calibrator = pickle.load(fh)
+                    self._calibrator = pickle.load(fh)  # nosec B301
+                if self._calibrator is None:
+                    raise ValueError(f"Calibrator file loaded as None: {self.calibrator_path}")
                 # Re-anchor the threshold to the calibrated probability space so that
                 # score comparisons are apples-to-apples.  The threshold stored in
                 # the metrics file was chosen on raw (uncalibrated) val probabilities.
                 raw_threshold = metrics.get("threshold_selection", {}).get("threshold")
                 if raw_threshold is not None:
                     try:
-                        self._calibrated_threshold = float(self._calibrator.predict([raw_threshold])[0])
-                    except Exception:
+                        self._calibrated_threshold = float(
+                            self._calibrator.predict([raw_threshold])[0]
+                        )
+                    except Exception as exc:
+                        logger.warning(
+                            "SequenceInference: calibrated threshold computation failed — %s: %s. "
+                            "Falling back to raw threshold.",
+                            type(exc).__name__, exc,
+                        )
                         self._calibrated_threshold = None
 
     @property
@@ -130,11 +148,15 @@ class SequenceInference:
     def predict(self, sequence_tensor) -> float:
         if self._model is None:
             self.load()
+        if self._model is None:
+            raise RuntimeError("SequenceInference.predict called before model was loaded.")
         array = np.asarray(sequence_tensor, dtype=np.float32)
         tensor = torch.from_numpy(np.expand_dims(array, axis=0)).to(self.device)
         with torch.no_grad():
             raw_score = float(torch.sigmoid(self._model(tensor)).cpu().item())
         if self._calibrator is not None:
+            if not hasattr(self._calibrator, 'predict'):
+                raise TypeError(f"Calibrator object has no predict() method: {type(self._calibrator)}")
             return float(self._calibrator.predict([raw_score])[0])
         return raw_score
 
@@ -150,6 +172,8 @@ class SequenceInference:
         """
         if self._model is None:
             self.load()
+        if self._model is None:
+            raise RuntimeError("SequenceInference.temporal_saliency called before model was loaded.")
         array = np.asarray(sequence_tensor, dtype=np.float32)
         tensor = torch.from_numpy(np.expand_dims(array, axis=0)).to(self.device)
         tensor.requires_grad_(True)

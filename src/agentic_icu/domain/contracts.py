@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
 # Hard limits applied at the API boundary
-MAX_WINDOW_ROWS = 168   # 7 days of hourly observations
+MAX_WINDOW_ROWS = 168  # 7 days of hourly observations
 MIN_WINDOW_ROWS = 1
 
 
@@ -62,6 +62,18 @@ class ClinicalDecision(BaseModel):
     rationale: str
 
 
+class SofaScore(BaseModel):
+    respiratory: Optional[int] = None
+    coagulation: Optional[int] = None
+    liver: Optional[int] = None
+    cardiovascular: Optional[int] = None
+    cns: Optional[int] = None
+    renal: Optional[int] = None
+    total: int = 0
+    components_available: int = 0
+    interpretation: str = "low"
+
+
 class EvaluatePatientResponse(BaseModel):
     patient_id: str
     signal_quality: SignalQualityResult
@@ -73,6 +85,7 @@ class EvaluatePatientResponse(BaseModel):
             status="unavailable", detail="Ensemble meta-learner not configured."
         )
     )
+    sofa: SofaScore = Field(default_factory=SofaScore)
     clinical_decision: ClinicalDecision
     reasoning_log: List[AgentLogEntry] = Field(default_factory=list)
 

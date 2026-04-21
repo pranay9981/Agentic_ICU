@@ -8,11 +8,10 @@ whether the proxy is viable for training.
 Run from repo root:
     python src/rebuild_training/resp_failure_proxy_analysis.py
 """
+
 from __future__ import annotations
 
 import csv
-import sys
-from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,8 +21,9 @@ RAW_DIR = ROOT / "data" / "raw"
 # Each returns True/False per row given the carry-forward value dict.
 # Labels are then sustained-window smoothed (SUSTAIN_HOURS consecutive True rows).
 
-SUSTAIN_HOURS = 2          # criteria must hold for this many consecutive hours
-LOOKAHEAD_HOURS = 8        # label at hour t if criteria met in t+1..t+LOOKAHEAD
+SUSTAIN_HOURS = 2  # criteria must hold for this many consecutive hours
+LOOKAHEAD_HOURS = 8  # label at hour t if criteria met in t+1..t+LOOKAHEAD
+
 
 def proxy_tier1(row: dict) -> bool:
     """Hypoxemic failure: low SpO2 + high Resp OR low SpO2/FiO2 ratio."""
@@ -48,7 +48,7 @@ def proxy_tier2(row: dict) -> bool:
     """Ventilatory + hypoxemic: SpO2 < 93 + Resp > 22 + acidosis or hypercapnia."""
     spo2 = row.get("O2Sat")
     resp = row.get("Resp")
-    ph   = row.get("pH")
+    ph = row.get("pH")
     pco2 = row.get("PaCO2")
 
     if spo2 is None or resp is None:
@@ -72,12 +72,13 @@ def proxy_combined(row: dict) -> bool:
 
 
 PROXIES = {
-    "tier1_hypoxemic":   proxy_tier1,
+    "tier1_hypoxemic": proxy_tier1,
     "tier2_ventilatory": proxy_tier2,
-    "combined":          proxy_combined,
+    "combined": proxy_combined,
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def parse_psv(path: Path) -> list[dict]:
     """Return list of row dicts with float values (NaN stripped)."""
@@ -90,6 +91,7 @@ def parse_psv(path: Path) -> list[dict]:
                 try:
                     f = float(v)
                     import math
+
                     if math.isfinite(f):
                         row[k] = f
                 except (TypeError, ValueError):
@@ -133,8 +135,8 @@ def lookahead_label(sustained: list[bool], horizon: int) -> list[bool]:
 
 # ── Main analysis ─────────────────────────────────────────────────────────────
 
+
 def analyse() -> None:
-    import math
 
     psv_files = sorted(RAW_DIR.glob("*.psv"))
     total_files = len(psv_files)
@@ -210,33 +212,41 @@ def analyse() -> None:
 
     for name, s in stats.items():
         total_rows = s["total_rows"]
-        pos_rows   = s["pos_rows"]
-        total_pat  = s["total_patients"]
-        pos_pat    = s["pos_patients"]
-        row_rate   = 100 * pos_rows   / total_rows  if total_rows else 0
-        pat_rate   = 100 * pos_pat    / total_pat   if total_pat  else 0
+        pos_rows = s["pos_rows"]
+        total_pat = s["total_patients"]
+        pos_pat = s["pos_patients"]
+        row_rate = 100 * pos_rows / total_rows if total_rows else 0
+        pat_rate = 100 * pos_pat / total_pat if total_pat else 0
 
         leads = s["lead_hours"]
         lead_median = sorted(leads)[len(leads) // 2] if leads else None
-        lead_mean   = sum(leads) / len(leads) if leads else None
+        lead_mean = sum(leads) / len(leads) if leads else None
 
         print(f"\n-- {name.upper()} --")
-        print(f"  Positive rows:     {pos_rows:>7,} / {total_rows:>7,}  ({row_rate:.2f}%)")
-        print(f"  Positive patients: {pos_pat:>7,} / {total_pat:>7,}  ({pat_rate:.2f}%)")
+        print(
+            f"  Positive rows:     {pos_rows:>7,} / {total_rows:>7,}  ({row_rate:.2f}%)"
+        )
+        print(
+            f"  Positive patients: {pos_pat:>7,} / {total_pat:>7,}  ({pat_rate:.2f}%)"
+        )
         print(f"  Overlap (both labels): {s['overlap_patients']:,}")
-        print(f"  Resp-only patients:    {s['resp_only_patients']:,}  (independent signal)")
+        print(
+            f"  Resp-only patients:    {s['resp_only_patients']:,}  (independent signal)"
+        )
         print(f"  Sepsis-only patients:  {s['sepsis_only_patients']:,}")
         if leads:
-            print(f"  Lead time vs SepsisLabel: median={lead_median:+.0f}h, mean={lead_mean:+.1f}h")
-            print(f"    (positive = resp proxy fires BEFORE sepsis; negative = after)")
+            print(
+                f"  Lead time vs SepsisLabel: median={lead_median:+.0f}h, mean={lead_mean:+.1f}h"
+            )
+            print("    (positive = resp proxy fires BEFORE sepsis; negative = after)")
         else:
-            print(f"  No co-occurring patients for lead-time analysis.")
+            print("  No co-occurring patients for lead-time analysis.")
 
         # Viability verdict
         viable = 3.0 <= row_rate <= 20.0 and pos_pat >= 500
         verdict = "VIABLE" if viable else "MARGINAL -- adjust thresholds"
         print(f"\n  VERDICT: {verdict}")
-        print(f"    Target: 3-20% row rate, >=500 positive patients")
+        print("    Target: 3-20% row rate, >=500 positive patients")
 
     print(f"\n{sep}")
     print("RECOMMENDATION")

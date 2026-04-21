@@ -1,0 +1,7 @@
+{
+  "version": "2.0.0",
+  "sepsis_gru_input_size": 68,
+  "sepsis_xgb_feature_count": 292,
+  "resp_gru_input_size": 68,
+  "resp_xgb_feature_count": 292
+}

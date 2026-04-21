@@ -94,6 +94,7 @@
         <button id="step-back"    class="btn-icon" title="Step back"    type="button">◂</button>
         <button id="step-forward" class="btn-icon" title="Step forward" type="button">▸</button>
         <button id="toggle-playback" class="btn-sm-primary" type="button">Re-evaluate</button>
+        <button id="print-report"    class="btn-sm-ghost"   type="button">⎙ Print</button>
         <button id="run-timeline"    class="btn-sm-ghost"   type="button">Timeline</button>
         <button id="close-sidebar"   class="btn-close"      type="button" title="Close">✕</button>
       </div>
@@ -235,6 +236,16 @@
         </div>
       </div>
 
+      <!-- SOFA Score -->
+      <div class="ds-section" id="sofa-section" style="display:none">
+        <div class="dss-head">
+          <span class="dss-title">Partial SOFA Score</span>
+          <span id="sofa-total-badge" class="dss-badge">—</span>
+        </div>
+        <div id="sofa-grid" class="sofa-grid"></div>
+        <p id="sofa-caveat" class="sofa-caveat">CNS (GCS) not available in dataset. Cardiovascular score based on MAP only (no vasopressor data).</p>
+      </div>
+
       <!-- Signal quality + audit -->
       <details class="ds-accordion">
         <summary class="da-head">Signal Quality &amp; Audit Trail</summary>
@@ -369,6 +380,7 @@
         <button class="mm-tab"        data-tab="sepsis_xgb" role="tab">Sepsis XGBoost</button>
         <button class="mm-tab"        data-tab="resp_gru"   role="tab">Resp GRU</button>
         <button class="mm-tab"        data-tab="resp_xgb"   role="tab">Resp XGBoost</button>
+        <button class="mm-tab"        data-tab="ensemble"   role="tab">Ensemble</button>
       </div>
     </div>
     <div id="mm-body" class="mm-body">
@@ -376,6 +388,7 @@
     </div>
   </div>
 </div>
+
 
 <script src="/static/app.js"></script>
 </body>

@@ -40,8 +40,10 @@ class EnsembleInference:
                 # Suppress only sklearn version mismatch warnings — expected when
                 # artifacts were trained on a different sklearn minor version.
                 with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
-                    model = pickle.load(fh)
+                    warnings.filterwarnings(
+                        "ignore", category=UserWarning, module="sklearn"
+                    )
+                    model = pickle.load(fh)  # nosec B301
             metrics: dict = {}
             if self.metrics_path and self.metrics_path.exists():
                 with self.metrics_path.open("r", encoding="utf-8") as fh:
@@ -57,10 +59,18 @@ class EnsembleInference:
 
     def predict(self, gru_score: float, xgb_score: float) -> float:
         for name, score in (("gru_score", gru_score), ("xgb_score", xgb_score)):
-            if not isinstance(score, (int, float)) or math.isnan(score) or math.isinf(score):
+            if (
+                not isinstance(score, (int, float))
+                or math.isnan(score)
+                or math.isinf(score)
+            ):
                 raise ValueError(f"{name} must be a finite number, got {score!r}")
             if not (0.0 <= score <= 1.0):
                 raise ValueError(f"{name} must be in [0, 1], got {score}")
         if self._model is None:
             self.load()
+        if self._model is None:
+            raise RuntimeError("EnsembleInference.predict called before model was loaded.")
+        if not hasattr(self._model, 'predict_proba'):
+            raise TypeError(f"Ensemble model has no predict_proba() method: {type(self._model)}")
         return float(self._model.predict_proba([[gru_score, xgb_score]])[0, 1])

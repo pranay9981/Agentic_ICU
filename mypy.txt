@@ -1,0 +1,56 @@
+src\rebuild_training\resp_failure_threshold_sweep.py:159: error: Unsupported operand types for > ("int" and "None")  [operator]
+src\rebuild_training\resp_failure_threshold_sweep.py:159: note: Left operand is of type "Any | None"
+src\rebuild_training\resp_failure_threshold_sweep.py:160: error: Unsupported operand types for < ("int" and "None")  [operator]
+src\rebuild_training\resp_failure_threshold_sweep.py:160: note: Left operand is of type "Any | None"
+src\rebuild_training\resp_failure_threshold_sweep.py:180: error: Unsupported operand types for > ("int" and "None")  [operator]
+src\rebuild_training\resp_failure_threshold_sweep.py:180: note: Left operand is of type "Any | None"
+src\rebuild_training\resp_failure_threshold_sweep.py:181: error: Unsupported operand types for > ("int" and "None")  [operator]
+src\rebuild_training\resp_failure_threshold_sweep.py:181: note: Left operand is of type "Any | None"
+src\rebuild_training\resp_failure_threshold_sweep.py:182: error: Unsupported operand types for < ("int" and "None")  [operator]
+src\rebuild_training\resp_failure_threshold_sweep.py:182: note: Left operand is of type "Any | None"
+src\agentic_icu\inference\ensemble.py:66: error: "None" has no attribute "predict_proba"  [attr-defined]
+src\agentic_icu\agents\signal_quality.py:214: error: Argument "suppression_mode" to "SignalQualityResult" has incompatible type "str"; expected "Literal['none', 'partial', 'full']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:209: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:253: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:269: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:287: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:302: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:313: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:356: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:364: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:372: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:379: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\agents\reasoner.py:386: error: Argument "priority" to "ClinicalDecision" has incompatible type "str"; expected "Literal['low', 'medium', 'high']"  [arg-type]
+src\agentic_icu\preprocessing\windowing.py:9: error: Library stubs not installed for "pandas"  [import-untyped]
+src\agentic_icu\inference\tabular.py:55: error: "None" has no attribute "predict"  [attr-defined]
+src\agentic_icu\inference\tabular.py:89: error: Incompatible return value type (got "Booster | None", expected "Booster")  [return-value]
+src\agentic_icu\inference\tabular.py:103: error: Item "None" of "Booster | None" has no attribute "predict"  [union-attr]
+src\agentic_icu\inference\explainer.py:6: error: Library stubs not installed for "pandas"  [import-untyped]
+src\agentic_icu\inference\explainer.py:6: note: Hint: "python3 -m pip install pandas-stubs"
+src\agentic_icu\inference\explainer.py:6: note: (or run "mypy --install-types" to install all missing stub packages)
+src\agentic_icu\inference\explainer.py:6: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+src\agentic_icu\inference\explainer.py:7: error: Skipping analyzing "shap": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src\agentic_icu\inference\explainer.py:133: error: Item "None" of "Any | None" has no attribute "shap_values"  [union-attr]
+src\rebuild_training\kaggle_train_deterioration.py:42: error: Library stubs not installed for "pandas"  [import-untyped]
+src\rebuild_training\kaggle_train_deterioration.py:46: error: Skipping analyzing "sklearn.isotonic": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src\rebuild_training\kaggle_train_deterioration.py:47: error: Skipping analyzing "sklearn.metrics": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src\rebuild_training\kaggle_train_deterioration.py:54: error: Skipping analyzing "sklearn.model_selection": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src\rebuild_training\kaggle_train_deterioration.py:415: error: Unsupported operand types for > ("float" and "None")  [operator]
+src\rebuild_training\kaggle_train_deterioration.py:415: note: Left operand is of type "float | None"
+src\rebuild_training\kaggle_train_deterioration.py:970: error: Incompatible types in assignment (expression has type "ndarray[tuple[Any, ...], dtype[Any]]", variable has type "list[str]")  [assignment]
+src\rebuild_training\kaggle_train_deterioration.py:971: error: Incompatible types in assignment (expression has type "ndarray[tuple[Any, ...], dtype[signedinteger[_32Bit]]]", variable has type "list[int]")  [assignment]
+src\rebuild_training\kaggle_train_deterioration.py:1253: error: Argument "weights" to "WeightedRandomSampler" has incompatible type "Tensor"; expected "Sequence[float]"  [arg-type]
+src\agentic_icu\inference\sequence.py:104: error: "None" has no attribute "predict"  [attr-defined]
+src\agentic_icu\inference\sequence.py:136: error: "None" not callable  [misc]
+src\agentic_icu\inference\sequence.py:164: error: Item "None" of "SequenceGRU | None" has no attribute "zero_grad"  [union-attr]
+src\agentic_icu\inference\sequence.py:165: error: "None" not callable  [misc]
+src\agentic_icu\inference\sequence.py:170: error: Item "None" of "SequenceGRU | None" has no attribute "zero_grad"  [union-attr]
+src\agentic_icu\orchestration\workflow.py:101: error: Incompatible types in assignment (expression has type "ModelAgentResult | None", variable has type "ModelAgentResult")  [assignment]
+src\agentic_icu\tools\evaluate_alert_policy.py:60: error: Argument 1 to "float" has incompatible type "str | Any | None"; expected "str | Buffer | SupportsFloat | SupportsIndex"  [arg-type]
+src\agentic_icu\tools\evaluate_alert_policy.py:118: error: Too many values to unpack (2 expected, 5 provided)  [misc]
+src\agentic_icu\tools\evaluate_alert_policy.py:134: error: Need type annotation for "sample_alerts" (hint: "sample_alerts: list[<type>] = ...")  [var-annotated]
+src\agentic_icu\api\main.py:117: error: "object" has no attribute "available"  [attr-defined]
+src\agentic_icu\api\main.py:118: error: "object" has no attribute "metrics"  [attr-defined]
+src\agentic_icu\api\main.py:161: error: Argument 1 to "_serializable_errors" has incompatible type "Sequence[Any]"; expected "list[Any]"  [arg-type]
+src\agentic_icu\api\main.py:347: error: Argument "observation_window" to "EvaluatePatientRequest" has incompatible type "list[dict[str, dict[str | Any, float]]]"; expected "list[ObservationRecord]"  [arg-type]
+Found 46 errors in 12 files (checked 29 source files)

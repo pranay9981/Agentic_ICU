@@ -1,28 +1,30 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from agentic_icu.domain.contracts import AgentLogEntry, SignalQualityResult
 
 # ── Physiological plausibility bounds ────────────────────────────────────────
 _BOUNDS: dict[str, tuple[float, float]] = {
-    "HR":    (15.0,  300.0),
-    "Pulse": (15.0,  300.0),
-    "SBP":   (30.0,  300.0),
-    "DBP":   (10.0,  200.0),
-    "MAP":   (15.0,  200.0),
-    "Resp":  ( 3.0,   60.0),
-    "Temp":  (26.0,   43.0),
-    "O2Sat": (50.0,  100.0),
+    "HR": (15.0, 300.0),
+    "Pulse": (15.0, 300.0),
+    "SBP": (30.0, 300.0),
+    "DBP": (10.0, 200.0),
+    "MAP": (15.0, 200.0),
+    "Resp": (3.0, 60.0),
+    "Temp": (26.0, 43.0),
+    "O2Sat": (50.0, 100.0),
 }
 
 _HARD_BLOCK_FEATURES = {"HR", "Pulse", "SBP", "O2Sat"}
 
-_FLATLINE_MIN_ROWS = 5         # consecutive identical values → flatline
-_TREND_WINDOW = 6              # rows used for window-based trend checks
-_HR_JUMP_THRESHOLD = 40.0      # BPM change in one hour
-_SBP_DROP_THRESHOLD = 35.0     # mmHg drop with no HR response
-_SPO2_PARADOX_SPO2 = 80.0      # SpO2 below this …
+_FLATLINE_MIN_ROWS = 5  # consecutive identical values → flatline
+_TREND_WINDOW = 6  # rows used for window-based trend checks
+_HR_JUMP_THRESHOLD = 40.0  # BPM change in one hour
+_SBP_DROP_THRESHOLD = 35.0  # mmHg drop with no HR response
+_SPO2_PARADOX_SPO2 = 80.0  # SpO2 below this …
 _SPO2_PARADOX_HR_DELTA = 10.0  # … but HR barely moved (probe-off sign)
-_PERSISTENT_LOW_SPO2 = 85.0    # SpO2 threshold for multi-row probe-off check
+_PERSISTENT_LOW_SPO2 = 85.0  # SpO2 threshold for multi-row probe-off check
 
 
 def _get(row: dict[str, float], *keys: str) -> float | None:
@@ -30,21 +32,29 @@ def _get(row: dict[str, float], *keys: str) -> float | None:
         value = row.get(key)
         # Exclude bools — Python bool is a subtype of int; True/False as vitals
         # would pass isinstance(value, (int, float)) and produce 0/1 bpm/mmHg.
-        if value is not None and not isinstance(value, bool) and isinstance(value, (int, float)):
+        if (
+            value is not None
+            and not isinstance(value, bool)
+            and isinstance(value, (int, float))
+        ):
             return float(value)
     return None
 
 
 class SignalQualityAgent:
-    def evaluate(self, window_values: list[dict[str, float]]) -> tuple[SignalQualityResult, list[AgentLogEntry]]:
+    def evaluate(
+        self, window_values: list[dict[str, float]]
+    ) -> tuple[SignalQualityResult, list[AgentLogEntry]]:
         logs: list[AgentLogEntry] = []
 
         if len(window_values) < 2:
             result = SignalQualityResult(signal_valid=True)
-            logs.append(AgentLogEntry(
-                agent="Signal Quality",
-                message="Insufficient history for artifact checks; stream accepted.",
-            ))
+            logs.append(
+                AgentLogEntry(
+                    agent="Signal Quality",
+                    message="Insufficient history for artifact checks; stream accepted.",
+                )
+            )
             return result, logs
 
         current = window_values[-1]
@@ -63,10 +73,12 @@ class SignalQualityAgent:
                     artifact_affected_features=["HR", "Pulse"],
                     suppression_mode="full",
                 )
-                logs.append(AgentLogEntry(
-                    agent="Signal Quality",
-                    message=f"Suppressed: HR {curr_hr:.0f} outside physiological range [{lo:.0f}, {hi:.0f}].",
-                ))
+                logs.append(
+                    AgentLogEntry(
+                        agent="Signal Quality",
+                        message=f"Suppressed: HR {curr_hr:.0f} outside physiological range [{lo:.0f}, {hi:.0f}].",
+                    )
+                )
                 return result, logs
 
         # ── 2. SBP impossible range ────────────────────────────────────────
@@ -82,10 +94,12 @@ class SignalQualityAgent:
                     artifact_affected_features=["SBP"],
                     suppression_mode="full",
                 )
-                logs.append(AgentLogEntry(
-                    agent="Signal Quality",
-                    message=f"Suppressed: SBP {curr_sbp:.0f} outside physiological range [{lo:.0f}, {hi:.0f}].",
-                ))
+                logs.append(
+                    AgentLogEntry(
+                        agent="Signal Quality",
+                        message=f"Suppressed: SBP {curr_sbp:.0f} outside physiological range [{lo:.0f}, {hi:.0f}].",
+                    )
+                )
                 return result, logs
 
         # ── 3. SpO2 impossible range ───────────────────────────────────────
@@ -101,15 +115,21 @@ class SignalQualityAgent:
                     artifact_affected_features=["O2Sat"],
                     suppression_mode="full",
                 )
-                logs.append(AgentLogEntry(
-                    agent="Signal Quality",
-                    message=f"Suppressed: SpO2 {curr_spo2:.0f}% outside physiological range.",
-                ))
+                logs.append(
+                    AgentLogEntry(
+                        agent="Signal Quality",
+                        message=f"Suppressed: SpO2 {curr_spo2:.0f}% outside physiological range.",
+                    )
+                )
                 return result, logs
 
         # ── 4. Improbable HR jump ──────────────────────────────────────────
         prev_hr = _get(previous, "HR", "Pulse")
-        if curr_hr is not None and prev_hr is not None and abs(curr_hr - prev_hr) > _HR_JUMP_THRESHOLD:
+        if (
+            curr_hr is not None
+            and prev_hr is not None
+            and abs(curr_hr - prev_hr) > _HR_JUMP_THRESHOLD
+        ):
             result = SignalQualityResult(
                 signal_valid=False,
                 artifact_type="improbable_hr_jump",
@@ -118,10 +138,12 @@ class SignalQualityAgent:
                 artifact_affected_features=["HR", "Pulse"],
                 suppression_mode="full",
             )
-            logs.append(AgentLogEntry(
-                agent="Signal Quality",
-                message="Suppressed: improbable heart-rate jump between consecutive readings.",
-            ))
+            logs.append(
+                AgentLogEntry(
+                    agent="Signal Quality",
+                    message="Suppressed: improbable heart-rate jump between consecutive readings.",
+                )
+            )
             return result, logs
 
         # ── 5. Isolated BP drop (no HR corroboration) ─────────────────────
@@ -142,10 +164,12 @@ class SignalQualityAgent:
                 artifact_affected_features=["SBP", "DBP", "MAP"],
                 suppression_mode="full",
             )
-            logs.append(AgentLogEntry(
-                agent="Signal Quality",
-                message="Suppressed: isolated BP collapse without corroborating physiology.",
-            ))
+            logs.append(
+                AgentLogEntry(
+                    agent="Signal Quality",
+                    message="Suppressed: isolated BP collapse without corroborating physiology.",
+                )
+            )
             return result, logs
 
         # ── 6. SBP < DBP pressure inversion ──────────────────────────────
@@ -159,21 +183,32 @@ class SignalQualityAgent:
                 artifact_affected_features=["SBP", "DBP", "MAP"],
                 suppression_mode="full",
             )
-            logs.append(AgentLogEntry(
-                agent="Signal Quality",
-                message=f"Suppressed: SBP ({curr_sbp:.0f}) < DBP ({curr_dbp:.0f}) — pressure inversion artifact.",
-            ))
+            logs.append(
+                AgentLogEntry(
+                    agent="Signal Quality",
+                    message=f"Suppressed: SBP ({curr_sbp:.0f}) < DBP ({curr_dbp:.0f}) — pressure inversion artifact.",
+                )
+            )
             return result, logs
 
         # ── 7. SpO2/HR paradox — window-based HR stability (probe-off heuristic) ──
-        if curr_spo2 is not None and curr_spo2 < _SPO2_PARADOX_SPO2 and curr_hr is not None:
+        if (
+            curr_spo2 is not None
+            and curr_spo2 < _SPO2_PARADOX_SPO2
+            and curr_hr is not None
+        ):
             n_check = min(_TREND_WINDOW, len(window_values))
             recent_hrs = [_get(r, "HR", "Pulse") for r in window_values[-n_check:]]
             valid_hrs = [v for v in recent_hrs if v is not None]
             if len(valid_hrs) >= 2:
-                hr_stable = (max(valid_hrs) - min(valid_hrs)) < _SPO2_PARADOX_HR_DELTA * 2
+                hr_stable = (
+                    max(valid_hrs) - min(valid_hrs)
+                ) < _SPO2_PARADOX_HR_DELTA * 2
             else:
-                hr_stable = prev_hr is not None and abs(curr_hr - prev_hr) < _SPO2_PARADOX_HR_DELTA
+                hr_stable = (
+                    prev_hr is not None
+                    and abs(curr_hr - prev_hr) < _SPO2_PARADOX_HR_DELTA
+                )
             if hr_stable:
                 result = SignalQualityResult(
                     signal_valid=True,
@@ -183,13 +218,15 @@ class SignalQualityAgent:
                     artifact_affected_features=["O2Sat"],
                     suppression_mode="partial",
                 )
-                logs.append(AgentLogEntry(
-                    agent="Signal Quality",
-                    message=(
-                        f"Soft suppression: SpO2 {curr_spo2:.0f}% critically low but HR stable "
-                        f"over last {n_check} observations — possible probe-off."
-                    ),
-                ))
+                logs.append(
+                    AgentLogEntry(
+                        agent="Signal Quality",
+                        message=(
+                            f"Soft suppression: SpO2 {curr_spo2:.0f}% critically low but HR stable "
+                            f"over last {n_check} observations — possible probe-off."
+                        ),
+                    )
+                )
                 return result, logs
 
         # ── 8. Flatline detection (multi-feature) ─────────────────────────
@@ -204,7 +241,7 @@ class SignalQualityAgent:
 
             if flatline_features:
                 hard = any(f in _HARD_BLOCK_FEATURES for f in flatline_features)
-                mode = "full" if hard else "partial"
+                mode: Literal["full", "partial"] = "full" if hard else "partial"
                 result = SignalQualityResult(
                     signal_valid=not hard,
                     artifact_type="flatline",
@@ -213,10 +250,12 @@ class SignalQualityAgent:
                     artifact_affected_features=flatline_features,
                     suppression_mode=mode,
                 )
-                logs.append(AgentLogEntry(
-                    agent="Signal Quality",
-                    message=f"{'Hard' if hard else 'Soft'} suppression: flatline detected in {', '.join(flatline_features)} over last {_FLATLINE_MIN_ROWS} rows.",
-                ))
+                logs.append(
+                    AgentLogEntry(
+                        agent="Signal Quality",
+                        message=f"{'Hard' if hard else 'Soft'} suppression: flatline detected in {', '.join(flatline_features)} over last {_FLATLINE_MIN_ROWS} rows.",  # noqa: E501
+                    )
+                )
                 return result, logs
 
         # ── 9. Persistent critically low SpO2 with stable HR ─────────────────
@@ -226,13 +265,15 @@ class SignalQualityAgent:
             recent_spo2_rows = window_values[-_FLATLINE_MIN_ROWS:]
             spo2_vals = [_get(r, "O2Sat") for r in recent_spo2_rows]
             valid_spo2 = [v for v in spo2_vals if v is not None]
-            if (
-                len(valid_spo2) >= _FLATLINE_MIN_ROWS
-                and all(v < _PERSISTENT_LOW_SPO2 for v in valid_spo2)
+            if len(valid_spo2) >= _FLATLINE_MIN_ROWS and all(
+                v < _PERSISTENT_LOW_SPO2 for v in valid_spo2
             ):
                 hr_vals = [_get(r, "HR", "Pulse") for r in recent_spo2_rows]
                 valid_hrs = [v for v in hr_vals if v is not None]
-                if len(valid_hrs) >= 2 and (max(valid_hrs) - min(valid_hrs)) < _SPO2_PARADOX_HR_DELTA * 2:
+                if (
+                    len(valid_hrs) >= 2
+                    and (max(valid_hrs) - min(valid_hrs)) < _SPO2_PARADOX_HR_DELTA * 2
+                ):
                     result = SignalQualityResult(
                         signal_valid=True,
                         artifact_type="persistent_low_spo2",
@@ -241,14 +282,16 @@ class SignalQualityAgent:
                         artifact_affected_features=["O2Sat"],
                         suppression_mode="partial",
                     )
-                    logs.append(AgentLogEntry(
-                        agent="Signal Quality",
-                        message=(
-                            f"Soft suppression: SpO2 < {_PERSISTENT_LOW_SPO2:.0f}% "
-                            f"for {_FLATLINE_MIN_ROWS} consecutive rows with stable HR "
-                            f"— probable probe-off artifact."
-                        ),
-                    ))
+                    logs.append(
+                        AgentLogEntry(
+                            agent="Signal Quality",
+                            message=(
+                                f"Soft suppression: SpO2 < {_PERSISTENT_LOW_SPO2:.0f}% "
+                                f"for {_FLATLINE_MIN_ROWS} consecutive rows with stable HR "
+                                f"— probable probe-off artifact."
+                            ),
+                        )
+                    )
                     return result, logs
 
         # ── Soft range warnings for non-critical vitals ────────────────────
@@ -269,10 +312,12 @@ class SignalQualityAgent:
                 artifact_affected_features=soft_affected,
                 suppression_mode="partial",
             )
-            logs.append(AgentLogEntry(
-                agent="Signal Quality",
-                message=f"Soft suppression: {', '.join(soft_affected)} outside plausible range.",
-            ))
+            logs.append(
+                AgentLogEntry(
+                    agent="Signal Quality",
+                    message=f"Soft suppression: {', '.join(soft_affected)} outside plausible range.",
+                )
+            )
             return result, logs
 
         # ── All checks passed ──────────────────────────────────────────────
@@ -282,8 +327,10 @@ class SignalQualityAgent:
             suppression_recommendation=False,
             suppression_mode="none",
         )
-        logs.append(AgentLogEntry(
-            agent="Signal Quality",
-            message="Cross-signal sanity checks passed.",
-        ))
+        logs.append(
+            AgentLogEntry(
+                agent="Signal Quality",
+                message="Cross-signal sanity checks passed.",
+            )
+        )
         return result, logs

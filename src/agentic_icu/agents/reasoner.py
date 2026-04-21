@@ -1,28 +1,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
-from typing import Any, Dict
-
-_PROBABILITY_FIELDS = frozenset({
-    "high_alert_extreme_sequence_score_threshold",
-    "high_alert_supported_sequence_score_threshold",
-    "high_alert_tabular_support_score_threshold",
-    "high_alert_max_score_threshold",
-    "high_alert_mean_score_threshold",
-    "medium_alert_sequence_score_threshold",
-    "medium_alert_tabular_score_threshold",
-    "medium_alert_max_score_threshold",
-    "resp_high_alert_threshold",
-    "resp_medium_alert_threshold",
-    "high_alert_ensemble_score_threshold",
-    "medium_alert_ensemble_score_threshold",
-})
+from typing import Any, Dict, Literal
 
 from agentic_icu.domain.contracts import (
     AgentLogEntry,
     ClinicalDecision,
     ModelAgentResult,
     SignalQualityResult,
+)
+
+_PROBABILITY_FIELDS = frozenset(
+    {
+        "high_alert_extreme_sequence_score_threshold",
+        "high_alert_supported_sequence_score_threshold",
+        "high_alert_tabular_support_score_threshold",
+        "high_alert_max_score_threshold",
+        "high_alert_mean_score_threshold",
+        "medium_alert_sequence_score_threshold",
+        "medium_alert_tabular_score_threshold",
+        "medium_alert_max_score_threshold",
+        "resp_high_alert_threshold",
+        "resp_medium_alert_threshold",
+        "high_alert_ensemble_score_threshold",
+        "medium_alert_ensemble_score_threshold",
+    }
 )
 
 
@@ -41,16 +43,26 @@ class AlertPolicy:
     high_alert_type: str = "Sepsis Early Warning"
     medium_alert_type: str = "Deterioration Watch"
     stable_alert_type: str = "Stable"
-    suppressed_artifact_priority: str = "low"
-    models_unavailable_priority: str = "low"
-    high_alert_priority: str = "high"
-    medium_alert_priority: str = "medium"
-    stable_priority: str = "low"
-    suppressed_artifact_rationale: str = "Signal Quality Agent suppressed the event before clinical escalation."
-    models_unavailable_rationale: str = "No trained runtime artifacts are loaded yet, so no predictive alert is issued."
-    high_alert_rationale: str = "At least one specialized agent reports high deterioration risk on validated signals."
-    medium_alert_rationale: str = "Predictive risk is elevated and should be monitored closely."
-    stable_rationale: str = "Available agent scores remain below the current alert thresholds."
+    suppressed_artifact_priority: Literal["low", "medium", "high"] = "low"
+    models_unavailable_priority: Literal["low", "medium", "high"] = "low"
+    high_alert_priority: Literal["low", "medium", "high"] = "high"
+    medium_alert_priority: Literal["low", "medium", "high"] = "medium"
+    stable_priority: Literal["low", "medium", "high"] = "low"
+    suppressed_artifact_rationale: str = (
+        "Signal Quality Agent suppressed the event before clinical escalation."
+    )
+    models_unavailable_rationale: str = (
+        "No trained runtime artifacts are loaded yet, so no predictive alert is issued."
+    )
+    high_alert_rationale: str = (
+        "At least one specialized agent reports high deterioration risk on validated signals."
+    )
+    medium_alert_rationale: str = (
+        "Predictive risk is elevated and should be monitored closely."
+    )
+    stable_rationale: str = (
+        "Available agent scores remain below the current alert thresholds."
+    )
     resp_high_alert_threshold: float | None = 0.8
     resp_medium_alert_threshold: float | None = 0.55
     resp_high_alert_type: str = "Respiratory Failure Risk"
@@ -92,7 +104,11 @@ class ClinicalReasoner:
         triggers: list[str] = []
 
         ensemble_threshold = self.policy.high_alert_ensemble_score_threshold
-        if ensemble_score is not None and ensemble_threshold is not None and ensemble_score >= ensemble_threshold:
+        if (
+            ensemble_score is not None
+            and ensemble_threshold is not None
+            and ensemble_score >= ensemble_threshold
+        ):
             triggers.append(f"ensemble>={ensemble_threshold:.2f}")
 
         extreme_sequence = self.policy.high_alert_extreme_sequence_score_threshold
@@ -113,16 +129,27 @@ class ClinicalReasoner:
             and vitals_result.score >= supported_sequence
             and lab_result.score >= tabular_support
         ):
-            triggers.append(f"sequence>={supported_sequence:.2f} with tabular>={tabular_support:.2f}")
+            triggers.append(
+                f"sequence>={supported_sequence:.2f} with tabular>={tabular_support:.2f}"
+            )
 
         if triggers:
             return True, ", ".join(triggers)
 
-        if self.policy.high_alert_max_score_threshold is not None and max_score >= self.policy.high_alert_max_score_threshold:
+        if (
+            self.policy.high_alert_max_score_threshold is not None
+            and max_score >= self.policy.high_alert_max_score_threshold
+        ):
             return True, f"max_score>={self.policy.high_alert_max_score_threshold:.2f}"
 
-        if self.policy.high_alert_mean_score_threshold is not None and mean_score >= self.policy.high_alert_mean_score_threshold:
-            return True, f"mean_score>={self.policy.high_alert_mean_score_threshold:.2f}"
+        if (
+            self.policy.high_alert_mean_score_threshold is not None
+            and mean_score >= self.policy.high_alert_mean_score_threshold
+        ):
+            return (
+                True,
+                f"mean_score>={self.policy.high_alert_mean_score_threshold:.2f}",
+            )
 
         return False, ""
 
@@ -136,7 +163,11 @@ class ClinicalReasoner:
         triggers: list[str] = []
 
         ensemble_threshold = self.policy.medium_alert_ensemble_score_threshold
-        if ensemble_score is not None and ensemble_threshold is not None and ensemble_score >= ensemble_threshold:
+        if (
+            ensemble_score is not None
+            and ensemble_threshold is not None
+            and ensemble_score >= ensemble_threshold
+        ):
             triggers.append(f"ensemble>={ensemble_threshold:.2f}")
 
         sequence_threshold = self.policy.medium_alert_sequence_score_threshold
@@ -158,19 +189,29 @@ class ClinicalReasoner:
         if triggers:
             return True, ", ".join(triggers)
 
-        if self.policy.medium_alert_max_score_threshold is not None and max_score >= self.policy.medium_alert_max_score_threshold:
-            return True, f"max_score>={self.policy.medium_alert_max_score_threshold:.2f}"
+        if (
+            self.policy.medium_alert_max_score_threshold is not None
+            and max_score >= self.policy.medium_alert_max_score_threshold
+        ):
+            return (
+                True,
+                f"max_score>={self.policy.medium_alert_max_score_threshold:.2f}",
+            )
 
         return False, ""
 
     @staticmethod
-    def _recompute_agent_result(result: ModelAgentResult, new_score: float | None) -> ModelAgentResult:
+    def _recompute_agent_result(
+        result: ModelAgentResult, new_score: float | None
+    ) -> ModelAgentResult:
         """Return a copy of result with score, risk_band, threshold_ratio, and detail all consistent."""
         if new_score is None:
-            return result.model_copy(update={"score": None, "risk_band": "low", "threshold_ratio": None})
+            return result.model_copy(
+                update={"score": None, "risk_band": "low", "threshold_ratio": None}
+            )
 
         dt = result.decision_threshold
-        new_ratio = (new_score / dt) if dt else None
+        new_ratio = (new_score / dt) if (dt is not None and dt > 0.0) else None
         moderate_ratio = 0.7
         if new_ratio is not None and new_ratio >= 1.0:
             new_band = "high"
@@ -184,12 +225,14 @@ class ClinicalReasoner:
         else:
             new_detail = f"Score suppression-adjusted to {new_score:.3f}."
 
-        return result.model_copy(update={
-            "score": new_score,
-            "risk_band": new_band,
-            "threshold_ratio": new_ratio,
-            "detail": new_detail,
-        })
+        return result.model_copy(
+            update={
+                "score": new_score,
+                "risk_band": new_band,
+                "threshold_ratio": new_ratio,
+                "detail": new_detail,
+            }
+        )
 
     def decide(
         self,
@@ -198,54 +241,86 @@ class ClinicalReasoner:
         lab_result: ModelAgentResult,
         resp_result: ModelAgentResult | None = None,
         ensemble_score: float | None = None,
-    ) -> tuple[ClinicalDecision, list[AgentLogEntry], ModelAgentResult, ModelAgentResult, ModelAgentResult | None]:
+    ) -> tuple[
+        ClinicalDecision,
+        list[AgentLogEntry],
+        ModelAgentResult,
+        ModelAgentResult,
+        ModelAgentResult | None,
+    ]:
         logs: list[AgentLogEntry] = []
 
         # Full suppression — hard block, no alert
-        if not signal_quality.signal_valid and signal_quality.suppression_recommendation:
+        if (
+            not signal_quality.signal_valid
+            and signal_quality.suppression_recommendation
+        ):
             decision = ClinicalDecision(
                 alert_triggered=False,
                 alert_type=self.policy.suppressed_artifact_alert_type,
                 priority=self.policy.suppressed_artifact_priority,
                 rationale=self.policy.suppressed_artifact_rationale,
             )
-            logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+            logs.append(
+                AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale)
+            )
             return decision, logs, vitals_result, lab_result, resp_result
 
         # Partial suppression — signal valid but suspect; apply score penalty to all
         # agent results so that score, risk_band, threshold_ratio, and detail remain
         # internally consistent in the response payload.
-        if signal_quality.suppression_mode == "partial" and signal_quality.suppression_recommendation:
+        if (
+            signal_quality.suppression_mode == "partial"
+            and signal_quality.suppression_recommendation
+        ):
             affected = signal_quality.artifact_affected_features
             f = self.policy.partial_suppression_factor
-            vitals_score_adj = vitals_result.score * f if vitals_result.score is not None else None
-            lab_score_adj = lab_result.score * f if lab_result.score is not None else None
-            vitals_result = self._recompute_agent_result(vitals_result, vitals_score_adj)
+            vitals_score_adj = (
+                vitals_result.score * f if vitals_result.score is not None else None
+            )
+            lab_score_adj = (
+                lab_result.score * f if lab_result.score is not None else None
+            )
+            vitals_result = self._recompute_agent_result(
+                vitals_result, vitals_score_adj
+            )
             lab_result = self._recompute_agent_result(lab_result, lab_score_adj)
             if resp_result is not None and resp_result.score is not None:
-                resp_result = self._recompute_agent_result(resp_result, resp_result.score * f)
-            logs.append(AgentLogEntry(
-                agent="Clinical Reasoner",
-                message=(
-                    f"Partial suppression applied ({f:.0%} score penalty) — "
-                    f"signal suspect ({signal_quality.artifact_type}) "
-                    f"affecting {', '.join(affected) if affected else 'unspecified features'}."
-                ),
-            ))
+                resp_result = self._recompute_agent_result(
+                    resp_result, resp_result.score * f
+                )
+            logs.append(
+                AgentLogEntry(
+                    agent="Clinical Reasoner",
+                    message=(
+                        f"Partial suppression applied ({f:.0%} score penalty) — "
+                        f"signal suspect ({signal_quality.artifact_type}) "
+                        f"affecting {', '.join(affected) if affected else 'unspecified features'}."
+                    ),
+                )
+            )
 
         # Partial suppression also penalises ensemble score
-        if signal_quality.suppression_mode == "partial" and signal_quality.suppression_recommendation:
+        if (
+            signal_quality.suppression_mode == "partial"
+            and signal_quality.suppression_recommendation
+        ):
             if ensemble_score is not None:
                 ensemble_score = ensemble_score * self.policy.partial_suppression_factor
 
-        available_scores = [score for score in (vitals_result.score, lab_result.score) if score is not None]
+        available_scores = [
+            score
+            for score in (vitals_result.score, lab_result.score)
+            if score is not None
+        ]
 
         if not available_scores:
             # Sepsis models have no score — check ensemble, then resp, before giving up.
             if ensemble_score is not None:
                 if (
                     self.policy.high_alert_ensemble_score_threshold is not None
-                    and ensemble_score >= self.policy.high_alert_ensemble_score_threshold
+                    and ensemble_score
+                    >= self.policy.high_alert_ensemble_score_threshold
                 ):
                     decision = ClinicalDecision(
                         alert_triggered=True,
@@ -257,11 +332,16 @@ class ClinicalReasoner:
                             "Sepsis models unavailable."
                         ),
                     )
-                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    logs.append(
+                        AgentLogEntry(
+                            agent="Clinical Reasoner", message=decision.rationale
+                        )
+                    )
                     return decision, logs, vitals_result, lab_result, resp_result
                 if (
                     self.policy.medium_alert_ensemble_score_threshold is not None
-                    and ensemble_score >= self.policy.medium_alert_ensemble_score_threshold
+                    and ensemble_score
+                    >= self.policy.medium_alert_ensemble_score_threshold
                 ):
                     decision = ClinicalDecision(
                         alert_triggered=True,
@@ -272,7 +352,11 @@ class ClinicalReasoner:
                             "Sepsis models unavailable."
                         ),
                     )
-                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    logs.append(
+                        AgentLogEntry(
+                            agent="Clinical Reasoner", message=decision.rationale
+                        )
+                    )
                     return decision, logs, vitals_result, lab_result, resp_result
 
             resp_score_lone = resp_result.score if resp_result is not None else None
@@ -290,7 +374,11 @@ class ClinicalReasoner:
                             "Sepsis models unavailable."
                         ),
                     )
-                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    logs.append(
+                        AgentLogEntry(
+                            agent="Clinical Reasoner", message=decision.rationale
+                        )
+                    )
                     return decision, logs, vitals_result, lab_result, resp_result
                 if (
                     self.policy.resp_medium_alert_threshold is not None
@@ -305,7 +393,11 @@ class ClinicalReasoner:
                             "Sepsis models unavailable."
                         ),
                     )
-                    logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+                    logs.append(
+                        AgentLogEntry(
+                            agent="Clinical Reasoner", message=decision.rationale
+                        )
+                    )
                     return decision, logs, vitals_result, lab_result, resp_result
             decision = ClinicalDecision(
                 alert_triggered=False,
@@ -313,13 +405,19 @@ class ClinicalReasoner:
                 priority=self.policy.models_unavailable_priority,
                 rationale=self.policy.models_unavailable_rationale,
             )
-            logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+            logs.append(
+                AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale)
+            )
             return decision, logs, vitals_result, lab_result, resp_result
 
         max_score = max(available_scores)
         mean_score = sum(available_scores) / len(available_scores)
-        high_triggered, high_basis = self._high_alert_triggered(vitals_result, lab_result, max_score, mean_score, ensemble_score)
-        medium_triggered, medium_basis = self._medium_alert_triggered(vitals_result, lab_result, max_score, ensemble_score)
+        high_triggered, high_basis = self._high_alert_triggered(
+            vitals_result, lab_result, max_score, mean_score, ensemble_score
+        )
+        medium_triggered, medium_basis = self._medium_alert_triggered(
+            vitals_result, lab_result, max_score, ensemble_score
+        )
 
         rationale = self._compose_rationale(
             high_triggered=high_triggered,
@@ -357,7 +455,11 @@ class ClinicalReasoner:
                 rationale=resp_rationale,
             )
         elif high_triggered:
-            extra = f" Respiratory compromise also detected (resp score {resp_score:.3f})." if resp_high else ""
+            extra = (
+                f" Respiratory compromise also detected (resp score {resp_score:.3f})."
+                if resp_high
+                else ""
+            )
             decision = ClinicalDecision(
                 alert_triggered=True,
                 alert_type=self.policy.high_alert_type,
@@ -365,7 +467,11 @@ class ClinicalReasoner:
                 rationale=rationale + extra,
             )
         elif medium_triggered:
-            extra = f" Respiratory failure risk also elevated (resp score {resp_score:.3f})." if resp_high or resp_medium else ""
+            extra = (
+                f" Respiratory failure risk also elevated (resp score {resp_score:.3f})."
+                if resp_high or resp_medium
+                else ""
+            )
             decision = ClinicalDecision(
                 alert_triggered=True,
                 alert_type=self.policy.medium_alert_type,
@@ -396,14 +502,36 @@ class ClinicalReasoner:
         )
         logs.append(AgentLogEntry(agent="Clinical Reasoner", message=score_message))
         if high_basis:
-            logs.append(AgentLogEntry(agent="Clinical Reasoner", message=f"High-alert basis: {high_basis}."))
+            logs.append(
+                AgentLogEntry(
+                    agent="Clinical Reasoner",
+                    message=f"High-alert basis: {high_basis}.",
+                )
+            )
         if medium_basis:
-            logs.append(AgentLogEntry(agent="Clinical Reasoner", message=f"Medium-alert basis: {medium_basis}."))
+            logs.append(
+                AgentLogEntry(
+                    agent="Clinical Reasoner",
+                    message=f"Medium-alert basis: {medium_basis}.",
+                )
+            )
         if resp_high:
-            logs.append(AgentLogEntry(agent="Clinical Reasoner", message=f"Resp high-alert: resp score {resp_score:.3f} >= {self.policy.resp_high_alert_threshold}."))
+            logs.append(
+                AgentLogEntry(
+                    agent="Clinical Reasoner",
+                    message=f"Resp high-alert: resp score {resp_score:.3f} >= {self.policy.resp_high_alert_threshold}.",
+                )
+            )
         elif resp_medium:
-            logs.append(AgentLogEntry(agent="Clinical Reasoner", message=f"Resp medium-alert: resp score {resp_score:.3f} >= {self.policy.resp_medium_alert_threshold}."))
-        logs.append(AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale))
+            logs.append(
+                AgentLogEntry(
+                    agent="Clinical Reasoner",
+                    message=f"Resp medium-alert: resp score {resp_score:.3f} >= {self.policy.resp_medium_alert_threshold}.",  # noqa: E501
+                )
+            )
+        logs.append(
+            AgentLogEntry(agent="Clinical Reasoner", message=decision.rationale)
+        )
         return decision, logs, vitals_result, lab_result, resp_result
 
     def _compose_rationale(

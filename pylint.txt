@@ -1,0 +1,865 @@
+************* Module agentic_icu.config
+src\agentic_icu\config.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\config.py:14:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\config.py:14:0: R0902: Too many instance attributes (22/7) (too-many-instance-attributes)
+src\agentic_icu\config.py:98:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\config.py:103:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.main
+src\agentic_icu\main.py:18:0: C0327: Mixed line endings LF and CRLF (mixed-line-endings)
+src\agentic_icu\main.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\main.py:8:0: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.__init__
+src\agentic_icu\__init__.py:2:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.agents.reasoner
+src\agentic_icu\agents\reasoner.py:49:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:50:0: C0301: Line too long (120/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:51:0: C0301: Line too long (118/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:64:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\agents\reasoner.py:68:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\agents\reasoner.py:95:0: C0301: Line too long (114/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:116:0: C0301: Line too long (102/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:121:0: C0301: Line too long (126/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:124:0: C0301: Line too long (129/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:139:0: C0301: Line too long (114/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:161:0: C0301: Line too long (130/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:167:0: C0301: Line too long (103/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:168:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:170:0: C0301: Line too long (105/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:183:0: C0301: Line too long (103/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:201:0: C0301: Line too long (115/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:218:0: C0301: Line too long (102/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:237:0: C0301: Line too long (102/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:241:0: C0301: Line too long (108/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:260:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:275:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:289:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:293:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:304:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:308:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:321:0: C0301: Line too long (129/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:322:0: C0301: Line too long (123/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:360:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:368:0: C0301: Line too long (129/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:380:0: C0301: Line too long (117/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:391:0: C0301: Line too long (108/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:399:0: C0301: Line too long (109/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:401:0: C0301: Line too long (113/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:403:0: C0301: Line too long (166/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:405:0: C0301: Line too long (170/100) (line-too-long)
+src\agentic_icu\agents\reasoner.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\agents\reasoner.py:21:0: C0413: Import "from agentic_icu.domain.contracts import AgentLogEntry, ClinicalDecision, ModelAgentResult, SignalQualityResult" should be placed at the top of the module (wrong-import-position)
+src\agentic_icu\agents\reasoner.py:30:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\agents\reasoner.py:30:0: R0902: Too many instance attributes (29/7) (too-many-instance-attributes)
+src\agentic_icu\agents\reasoner.py:75:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\agents\reasoner.py:80:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\agents\reasoner.py:84:4: R0913: Too many arguments (6/5) (too-many-arguments)
+src\agentic_icu\agents\reasoner.py:84:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src\agentic_icu\agents\reasoner.py:109:12: R0916: Too many boolean expressions in if statement (6/5) (too-many-boolean-expressions)
+src\agentic_icu\agents\reasoner.py:194:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\agents\reasoner.py:194:4: R0913: Too many arguments (6/5) (too-many-arguments)
+src\agentic_icu\agents\reasoner.py:194:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src\agentic_icu\agents\reasoner.py:194:4: R0914: Too many local variables (27/15) (too-many-locals)
+src\agentic_icu\agents\reasoner.py:194:4: R0911: Too many return statements (7/6) (too-many-return-statements)
+src\agentic_icu\agents\reasoner.py:194:4: R0912: Too many branches (21/12) (too-many-branches)
+src\agentic_icu\agents\reasoner.py:194:4: R0915: Too many statements (69/50) (too-many-statements)
+src\agentic_icu\agents\reasoner.py:409:4: R0913: Too many arguments (7/5) (too-many-arguments)
+src\agentic_icu\agents\reasoner.py:409:4: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+src\agentic_icu\agents\reasoner.py:80:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module agentic_icu.agents.resp_failure
+src\agentic_icu\agents\resp_failure.py:54:0: C0301: Line too long (106/100) (line-too-long)
+src\agentic_icu\agents\resp_failure.py:76:0: C0301: Line too long (109/100) (line-too-long)
+src\agentic_icu\agents\resp_failure.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\agents\resp_failure.py:31:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\agents\resp_failure.py:31:4: R0914: Too many local variables (18/15) (too-many-locals)
+src\agentic_icu\agents\resp_failure.py:75:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\agents\resp_failure.py:14:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module agentic_icu.agents.signal_quality
+src\agentic_icu\agents\signal_quality.py:39:0: C0301: Line too long (113/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:57:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\agents\signal_quality.py:68:0: C0301: Line too long (110/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:76:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\agents\signal_quality.py:87:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:95:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\agents\signal_quality.py:112:0: C0301: Line too long (103/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:164:0: C0301: Line too long (114/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:218:0: C0301: Line too long (162/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:235:0: C0301: Line too long (106/100) (line-too-long)
+src\agentic_icu\agents\signal_quality.py:260:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\agents\signal_quality.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\agents\signal_quality.py:38:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\agents\signal_quality.py:39:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\agents\signal_quality.py:39:4: R0914: Too many local variables (31/15) (too-many-locals)
+src\agentic_icu\agents\signal_quality.py:130:12: R0916: Too many boolean expressions in if statement (6/5) (too-many-boolean-expressions)
+src\agentic_icu\agents\signal_quality.py:39:4: R0911: Too many return statements (12/6) (too-many-return-statements)
+src\agentic_icu\agents\signal_quality.py:39:4: R0912: Too many branches (25/12) (too-many-branches)
+src\agentic_icu\agents\signal_quality.py:39:4: R0915: Too many statements (81/50) (too-many-statements)
+src\agentic_icu\agents\signal_quality.py:38:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module agentic_icu.agents.tabular
+src\agentic_icu\agents\tabular.py:48:0: C0301: Line too long (111/100) (line-too-long)
+src\agentic_icu\agents\tabular.py:68:0: C0301: Line too long (108/100) (line-too-long)
+src\agentic_icu\agents\tabular.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\agents\tabular.py:14:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\agents\tabular.py:25:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\agents\tabular.py:25:4: R0914: Too many local variables (17/15) (too-many-locals)
+src\agentic_icu\agents\tabular.py:67:19: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\agents\tabular.py:59:26: W0612: Unused variable 'all_contributions' (unused-variable)
+src\agentic_icu\agents\tabular.py:14:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module agentic_icu.agents.vitals
+src\agentic_icu\agents\vitals.py:40:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\agents\vitals.py:61:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\agents\vitals.py:63:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\agents\vitals.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\agents\vitals.py:12:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\agents\vitals.py:17:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\agents\vitals.py:17:4: R0914: Too many local variables (18/15) (too-many-locals)
+src\agentic_icu\agents\vitals.py:62:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\agents\vitals.py:12:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module agentic_icu.agents.__init__
+src\agentic_icu\agents\__init__.py:2:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.api.dependencies
+src\agentic_icu\api\dependencies.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\api\dependencies.py:20:0: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.api.main
+src\agentic_icu\api\main.py:49:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\api\main.py:122:0: C0301: Line too long (115/100) (line-too-long)
+src\agentic_icu\api\main.py:124:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\api\main.py:147:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\api\main.py:178:0: C0301: Line too long (107/100) (line-too-long)
+src\agentic_icu\api\main.py:181:0: C0301: Line too long (113/100) (line-too-long)
+src\agentic_icu\api\main.py:208:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\api\main.py:216:0: C0301: Line too long (128/100) (line-too-long)
+src\agentic_icu\api\main.py:275:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\api\main.py:276:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\api\main.py:303:0: C0301: Line too long (114/100) (line-too-long)
+src\agentic_icu\api\main.py:345:0: C0301: Line too long (109/100) (line-too-long)
+src\agentic_icu\api\main.py:494:0: C0301: Line too long (124/100) (line-too-long)
+src\agentic_icu\api\main.py:506:0: C0301: Line too long (125/100) (line-too-long)
+src\agentic_icu\api\main.py:523:0: C0301: Line too long (102/100) (line-too-long)
+src\agentic_icu\api\main.py:543:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\api\main.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\api\main.py:41:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+src\agentic_icu\api\main.py:54:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+src\agentic_icu\api\main.py:85:19: W0621: Redefining name 'app' from outer scope (line 131) (redefined-outer-name)
+src\agentic_icu\api\main.py:87:4: W0603: Using the global statement (global-statement)
+src\agentic_icu\api\main.py:97:11: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\api\main.py:105:11: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\api\main.py:125:11: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\api\main.py:85:19: W0613: Unused argument 'app' (unused-argument)
+src\agentic_icu\api\main.py:156:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:156:35: W0613: Unused argument 'request' (unused-argument)
+src\agentic_icu\api\main.py:167:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:167:29: W0613: Unused argument 'request' (unused-argument)
+src\agentic_icu\api\main.py:176:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:176:52: W0613: Unused argument 'exc' (unused-argument)
+src\agentic_icu\api\main.py:214:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:223:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:228:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:250:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\api\main.py:270:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:291:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:315:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:488:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\api\main.py:526:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\api\main.py:542:15: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module agentic_icu.domain.contracts
+src\agentic_icu\domain\contracts.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\domain\contracts.py:12:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:17:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:26:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\domain\contracts.py:33:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:38:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:47:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:58:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:65:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:80:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\domain\contracts.py:86:0: C0115: Missing class docstring (missing-class-docstring)
+************* Module agentic_icu.domain.features
+src\agentic_icu\domain\features.py:52:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.domain.__init__
+src\agentic_icu\domain\__init__.py:2:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.inference.ensemble
+src\agentic_icu\inference\ensemble.py:62:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+src\agentic_icu\inference\ensemble.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\inference\ensemble.py:23:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\ensemble.py:31:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\ensemble.py:53:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\ensemble.py:58:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.inference.explainer
+src\agentic_icu\inference\explainer.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\inference\explainer.py:132:8: C0103: Variable name "X" doesn't conform to snake_case naming style (invalid-name)
+************* Module agentic_icu.inference.sequence
+src\agentic_icu\inference\sequence.py:51:0: C0301: Line too long (106/100) (line-too-long)
+src\agentic_icu\inference\sequence.py:93:0: C0301: Line too long (114/100) (line-too-long)
+src\agentic_icu\inference\sequence.py:104:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\inference\sequence.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\inference\sequence.py:11:0: R0402: Use 'from torch import nn' instead (consider-using-from-import)
+src\agentic_icu\inference\sequence.py:16:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\inference\sequence.py:17:4: R0913: Too many arguments (6/5) (too-many-arguments)
+src\agentic_icu\inference\sequence.py:17:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src\agentic_icu\inference\sequence.py:44:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:50:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\inference\sequence.py:50:0: R0902: Too many instance attributes (9/7) (too-many-instance-attributes)
+src\agentic_icu\inference\sequence.py:63:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:67:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:70:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:105:27: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\inference\sequence.py:109:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:115:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:127:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\sequence.py:130:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.inference.tabular
+src\agentic_icu\inference\tabular.py:16:0: C0301: Line too long (106/100) (line-too-long)
+src\agentic_icu\inference\tabular.py:55:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\inference\tabular.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\inference\tabular.py:15:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\inference\tabular.py:15:0: R0902: Too many instance attributes (9/7) (too-many-instance-attributes)
+src\agentic_icu\inference\tabular.py:28:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:32:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:35:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:56:27: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\inference\tabular.py:60:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:66:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:72:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:82:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:86:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\inference\tabular.py:91:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.inference.__init__
+src\agentic_icu\inference\__init__.py:2:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.orchestration.workflow
+src\agentic_icu\orchestration\workflow.py:11:0: C0301: Line too long (106/100) (line-too-long)
+src\agentic_icu\orchestration\workflow.py:71:0: C0301: Line too long (116/100) (line-too-long)
+src\agentic_icu\orchestration\workflow.py:76:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\orchestration\workflow.py:101:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\orchestration\workflow.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\orchestration\workflow.py:17:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\orchestration\workflow.py:18:4: R0913: Too many arguments (7/5) (too-many-arguments)
+src\agentic_icu\orchestration\workflow.py:18:4: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+src\agentic_icu\orchestration\workflow.py:34:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\orchestration\workflow.py:34:4: R0914: Too many local variables (19/15) (too-many-locals)
+src\agentic_icu\orchestration\workflow.py:98:19: W0718: Catching too general exception Exception (broad-exception-caught)
+src\agentic_icu\orchestration\workflow.py:17:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module agentic_icu.orchestration.__init__
+src\agentic_icu\orchestration\__init__.py:2:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.preprocessing.windowing
+src\agentic_icu\preprocessing\windowing.py:46:0: C0301: Line too long (101/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:58:0: C0301: Line too long (106/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:98:0: C0301: Line too long (105/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:102:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:106:0: C0301: Line too long (103/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:119:0: C0301: Line too long (104/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:170:0: C0301: Line too long (129/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:181:0: C0301: Line too long (114/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:206:0: C0301: Line too long (102/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:209:0: C0301: Line too long (112/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:210:0: C0301: Line too long (110/100) (line-too-long)
+src\agentic_icu\preprocessing\windowing.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\preprocessing\windowing.py:17:0: C0115: Missing class docstring (missing-class-docstring)
+src\agentic_icu\preprocessing\windowing.py:30:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\preprocessing\windowing.py:33:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\preprocessing\windowing.py:70:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\preprocessing\windowing.py:76:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\preprocessing\windowing.py:91:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\preprocessing\windowing.py:148:4: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module agentic_icu.preprocessing.__init__
+src\agentic_icu\preprocessing\__init__.py:2:0: C0305: Trailing newlines (trailing-newlines)
+************* Module agentic_icu.tools.evaluate_alert_policy
+src\agentic_icu\tools\evaluate_alert_policy.py:19:0: C0301: Line too long (121/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:23:0: C0301: Line too long (105/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:24:0: C0301: Line too long (115/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:25:0: C0301: Line too long (132/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:29:0: C0301: Line too long (122/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:87:0: C0301: Line too long (107/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:122:0: C0301: Line too long (110/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:309:0: C0301: Line too long (111/100) (line-too-long)
+src\agentic_icu\tools\evaluate_alert_policy.py:318:0: C0327: Mixed line endings LF and CRLF (mixed-line-endings)
+src\agentic_icu\tools\evaluate_alert_policy.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:16:0: C0413: Import "from agentic_icu.agents.reasoner import AlertPolicy, ClinicalReasoner" should be placed at the top of the module (wrong-import-position)
+src\agentic_icu\tools\evaluate_alert_policy.py:17:0: C0413: Import "from agentic_icu.api.dependencies import get_workflow" should be placed at the top of the module (wrong-import-position)
+src\agentic_icu\tools\evaluate_alert_policy.py:18:0: C0413: Import "from agentic_icu.config import settings" should be placed at the top of the module (wrong-import-position)
+src\agentic_icu\tools\evaluate_alert_policy.py:19:0: C0413: Import "from agentic_icu.domain.contracts import EvaluatePatientRequest, ModelAgentResult, ObservationRecord, SignalQualityResult" should be placed at the top of the module (wrong-import-position)
+src\agentic_icu\tools\evaluate_alert_policy.py:22:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:47:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:51:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:81:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:87:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:113:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:122:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:122:0: R0914: Too many local variables (27/15) (too-many-locals)
+src\agentic_icu\tools\evaluate_alert_policy.py:211:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:217:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:222:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:247:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:269:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:274:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\agentic_icu\tools\evaluate_alert_policy.py:281:0: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module rebuild_training.kaggle_train_deterioration
+src\rebuild_training\kaggle_train_deterioration.py:198:0: C0301: Line too long (109/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:200:0: C0301: Line too long (105/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:201:0: C0301: Line too long (131/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:202:0: C0301: Line too long (114/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:203:0: C0301: Line too long (114/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:204:0: C0301: Line too long (104/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:206:0: C0301: Line too long (103/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:207:0: C0301: Line too long (103/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:208:0: C0301: Line too long (136/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:209:0: C0301: Line too long (131/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:210:0: C0301: Line too long (160/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:211:0: C0301: Line too long (170/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:222:0: C0301: Line too long (133/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:232:0: C0301: Line too long (113/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:236:0: C0301: Line too long (119/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:321:0: C0301: Line too long (102/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:365:0: C0301: Line too long (105/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:488:0: C0301: Line too long (129/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:499:0: C0301: Line too long (111/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:560:0: C0301: Line too long (106/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:571:0: C0301: Line too long (111/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:621:0: C0301: Line too long (116/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:638:0: C0301: Line too long (123/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:658:0: C0301: Line too long (102/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:671:0: C0301: Line too long (114/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:697:0: C0301: Line too long (114/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:698:0: C0301: Line too long (113/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:728:0: C0301: Line too long (118/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:793:0: C0301: Line too long (101/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:803:0: C0301: Line too long (103/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:834:0: C0301: Line too long (119/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:836:0: C0301: Line too long (101/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:864:0: C0301: Line too long (110/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:867:0: C0301: Line too long (105/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:882:0: C0301: Line too long (118/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:883:0: C0301: Line too long (117/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:891:0: C0301: Line too long (104/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:952:0: C0301: Line too long (107/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1068:0: C0301: Line too long (103/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1115:0: C0301: Line too long (125/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1121:0: C0301: Line too long (119/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1172:0: C0301: Line too long (109/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1197:0: C0301: Line too long (106/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1244:0: C0301: Line too long (132/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1257:0: C0301: Line too long (131/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1258:0: C0301: Line too long (116/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1259:0: C0301: Line too long (119/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1277:0: C0301: Line too long (103/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1315:0: C0301: Line too long (101/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1316:0: C0301: Line too long (205/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1353:0: C0301: Line too long (120/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1359:0: C0301: Line too long (101/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1394:0: C0301: Line too long (108/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1400:0: C0301: Line too long (123/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1401:0: C0301: Line too long (130/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1454:0: C0301: Line too long (121/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1504:0: C0301: Line too long (115/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1530:0: C0301: Line too long (117/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1531:0: C0301: Line too long (117/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1532:0: C0301: Line too long (117/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1561:0: C0301: Line too long (106/100) (line-too-long)
+src\rebuild_training\kaggle_train_deterioration.py:1:0: C0302: Too many lines in module (1596/1000) (too-many-lines)
+src\rebuild_training\kaggle_train_deterioration.py:1596:0: C0305: Trailing newlines (trailing-newlines)
+src\rebuild_training\kaggle_train_deterioration.py:44:0: R0402: Use 'from torch import nn' instead (consider-using-from-import)
+src\rebuild_training\kaggle_train_deterioration.py:132:0: C0115: Missing class docstring (missing-class-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:132:0: R0902: Too many instance attributes (35/7) (too-many-instance-attributes)
+src\rebuild_training\kaggle_train_deterioration.py:171:0: C0115: Missing class docstring (missing-class-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:182:0: C0115: Missing class docstring (missing-class-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:189:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:197:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:241:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:247:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:259:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:269:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:292:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:321:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:328:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:357:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:361:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:365:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:448:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:448:0: R0914: Too many local variables (37/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:448:0: R0915: Too many statements (56/50) (too-many-statements)
+src\rebuild_training\kaggle_train_deterioration.py:549:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:575:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:579:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:585:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:592:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:613:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:625:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:625:0: R0913: Too many arguments (6/5) (too-many-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:625:0: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:625:0: R0914: Too many local variables (39/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:635:4: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:639:4: C0103: Variable name "X_val" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:641:4: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:657:12: C0415: Import outside toplevel (imblearn.over_sampling.SMOTE) (import-outside-toplevel)
+src\rebuild_training\kaggle_train_deterioration.py:659:12: C0103: Variable name "X_train_sm" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:625:0: R0915: Too many statements (53/50) (too-many-statements)
+src\rebuild_training\kaggle_train_deterioration.py:751:0: R0914: Too many local variables (48/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:764:4: W0621: Redefining name 'roc_auc_score' from outer scope (line 47) (redefined-outer-name)
+src\rebuild_training\kaggle_train_deterioration.py:764:4: W0621: Redefining name 'average_precision_score' from outer scope (line 47) (redefined-outer-name)
+src\rebuild_training\kaggle_train_deterioration.py:763:4: C0415: Import outside toplevel (sklearn.linear_model.LogisticRegression) (import-outside-toplevel)
+src\rebuild_training\kaggle_train_deterioration.py:764:4: W0404: Reimport 'roc_auc_score' (imported line 47) (reimported)
+src\rebuild_training\kaggle_train_deterioration.py:764:4: W0404: Reimport 'average_precision_score' (imported line 47) (reimported)
+src\rebuild_training\kaggle_train_deterioration.py:764:4: C0415: Import outside toplevel (sklearn.metrics.roc_auc_score, sklearn.metrics.average_precision_score) (import-outside-toplevel)
+src\rebuild_training\kaggle_train_deterioration.py:798:4: C0103: Variable name "gru_val_X_path" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:829:4: C0103: Variable name "X_val_seq" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:856:4: C0103: Variable name "X_meta" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:751:0: R0915: Too many statements (65/50) (too-many-statements)
+src\rebuild_training\kaggle_train_deterioration.py:891:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:897:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:897:0: R0914: Too many local variables (21/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:935:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:935:0: R0913: Too many arguments (7/5) (too-many-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:935:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:935:0: R0914: Too many local variables (21/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:968:4: C0103: Variable name "X" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:985:0: R0914: Too many local variables (18/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:1046:0: R0913: Too many arguments (7/5) (too-many-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:1046:0: R0917: Too many positional arguments (7/5) (too-many-positional-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:1046:0: R0914: Too many local variables (19/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:1083:4: C0103: Variable name "X" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:1111:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1120:0: C0115: Missing class docstring (missing-class-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1121:4: R0913: Too many arguments (6/5) (too-many-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:1121:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src\rebuild_training\kaggle_train_deterioration.py:1154:4: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1160:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1161:4: C0103: Argument name "X" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:1175:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1202:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1218:11: W0718: Catching too general exception Exception (broad-exception-caught)
+src\rebuild_training\kaggle_train_deterioration.py:1225:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src\rebuild_training\kaggle_train_deterioration.py:1230:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1230:0: R0914: Too many local variables (54/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:1236:4: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:1238:4: C0103: Variable name "X_val" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:1240:4: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\kaggle_train_deterioration.py:1269:4: W0212: Access to a protected member _init_weights of a client class (protected-access)
+src\rebuild_training\kaggle_train_deterioration.py:1230:0: R0915: Too many statements (92/50) (too-many-statements)
+src\rebuild_training\kaggle_train_deterioration.py:1410:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1415:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1419:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1423:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1432:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\kaggle_train_deterioration.py:1432:0: R0914: Too many local variables (25/15) (too-many-locals)
+src\rebuild_training\kaggle_train_deterioration.py:1432:0: R0912: Too many branches (13/12) (too-many-branches)
+src\rebuild_training\kaggle_train_deterioration.py:1432:0: R0915: Too many statements (73/50) (too-many-statements)
+src\rebuild_training\kaggle_train_deterioration.py:37:0: W0611: Unused field imported from dataclasses (unused-import)
+************* Module rebuild_training.resp_failure_proxy_analysis
+src\rebuild_training\resp_failure_proxy_analysis.py:92:20: C0415: Import outside toplevel (math) (import-outside-toplevel)
+src\rebuild_training\resp_failure_proxy_analysis.py:136:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_proxy_analysis.py:136:0: R0914: Too many local variables (32/15) (too-many-locals)
+src\rebuild_training\resp_failure_proxy_analysis.py:137:4: C0415: Import outside toplevel (math) (import-outside-toplevel)
+src\rebuild_training\resp_failure_proxy_analysis.py:231:18: W1309: Using an f-string that does not have any interpolated variables (f-string-without-interpolation)
+src\rebuild_training\resp_failure_proxy_analysis.py:233:18: W1309: Using an f-string that does not have any interpolated variables (f-string-without-interpolation)
+src\rebuild_training\resp_failure_proxy_analysis.py:239:14: W1309: Using an f-string that does not have any interpolated variables (f-string-without-interpolation)
+src\rebuild_training\resp_failure_proxy_analysis.py:136:0: R0912: Too many branches (13/12) (too-many-branches)
+src\rebuild_training\resp_failure_proxy_analysis.py:136:0: R0915: Too many statements (69/50) (too-many-statements)
+src\rebuild_training\resp_failure_proxy_analysis.py:137:4: W0611: Unused import math (unused-import)
+src\rebuild_training\resp_failure_proxy_analysis.py:14:0: W0611: Unused import sys (unused-import)
+src\rebuild_training\resp_failure_proxy_analysis.py:15:0: W0611: Unused defaultdict imported from collections (unused-import)
+************* Module rebuild_training.resp_failure_threshold_sweep
+src\rebuild_training\resp_failure_threshold_sweep.py:27:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_threshold_sweep.py:44:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_threshold_sweep.py:53:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_threshold_sweep.py:62:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_threshold_sweep.py:73:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_threshold_sweep.py:80:0: C0116: Missing function or method docstring (missing-function-docstring)
+src\rebuild_training\resp_failure_threshold_sweep.py:80:0: R0914: Too many local variables (40/15) (too-many-locals)
+src\rebuild_training\resp_failure_threshold_sweep.py:203:4: C0103: Variable name "TARGET_LOW" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\resp_failure_threshold_sweep.py:203:16: C0103: Variable name "TARGET_HIGH" doesn't conform to snake_case naming style (invalid-name)
+src\rebuild_training\resp_failure_threshold_sweep.py:80:0: R0912: Too many branches (24/12) (too-many-branches)
+src\rebuild_training\resp_failure_threshold_sweep.py:80:0: R0915: Too many statements (94/50) (too-many-statements)
+************* Module test_api
+tests\test_api.py:58:0: C0301: Line too long (117/100) (line-too-long)
+tests\test_api.py:61:0: C0301: Line too long (117/100) (line-too-long)
+tests\test_api.py:146:0: C0301: Line too long (107/100) (line-too-long)
+tests\test_api.py:248:0: C0301: Line too long (101/100) (line-too-long)
+tests\test_api.py:253:0: C0301: Line too long (108/100) (line-too-long)
+tests\test_api.py:410:0: C0301: Line too long (105/100) (line-too-long)
+tests\test_api.py:445:0: C0301: Line too long (104/100) (line-too-long)
+tests\test_api.py:469:0: C0301: Line too long (102/100) (line-too-long)
+tests\test_api.py:470:0: C0301: Line too long (102/100) (line-too-long)
+tests\test_api.py:622:0: C0301: Line too long (101/100) (line-too-long)
+tests\test_api.py:635:0: C0301: Line too long (125/100) (line-too-long)
+tests\test_api.py:651:0: C0301: Line too long (121/100) (line-too-long)
+tests\test_api.py:659:0: C0301: Line too long (122/100) (line-too-long)
+tests\test_api.py:660:0: C0301: Line too long (109/100) (line-too-long)
+tests\test_api.py:667:0: C0301: Line too long (127/100) (line-too-long)
+tests\test_api.py:671:0: C0301: Line too long (123/100) (line-too-long)
+tests\test_api.py:681:0: C0301: Line too long (107/100) (line-too-long)
+tests\test_api.py:686:0: C0301: Line too long (104/100) (line-too-long)
+tests\test_api.py:709:0: C0301: Line too long (110/100) (line-too-long)
+tests\test_api.py:730:0: C0301: Line too long (110/100) (line-too-long)
+tests\test_api.py:810:0: C0301: Line too long (115/100) (line-too-long)
+tests\test_api.py:812:0: C0301: Line too long (109/100) (line-too-long)
+tests\test_api.py:829:0: C0301: Line too long (106/100) (line-too-long)
+tests\test_api.py:835:0: C0301: Line too long (110/100) (line-too-long)
+tests\test_api.py:840:0: C0301: Line too long (126/100) (line-too-long)
+tests\test_api.py:850:0: C0301: Line too long (121/100) (line-too-long)
+tests\test_api.py:859:0: C0301: Line too long (120/100) (line-too-long)
+tests\test_api.py:860:0: C0301: Line too long (134/100) (line-too-long)
+tests\test_api.py:868:0: C0301: Line too long (109/100) (line-too-long)
+tests\test_api.py:877:0: C0301: Line too long (106/100) (line-too-long)
+tests\test_api.py:1:0: C0302: Too many lines in module (1005/1000) (too-many-lines)
+tests\test_api.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+tests\test_api.py:17:0: C0413: Import "from agentic_icu.api.dependencies import get_workflow" should be placed at the top of the module (wrong-import-position)
+tests\test_api.py:18:0: C0413: Import "from agentic_icu.api.main import app" should be placed at the top of the module (wrong-import-position)
+tests\test_api.py:47:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:54:8: C0103: Attribute name "ModelAgentResult" doesn't conform to snake_case naming style (invalid-name)
+tests\test_api.py:55:8: C0103: Attribute name "SignalQualityResult" doesn't conform to snake_case naming style (invalid-name)
+tests\test_api.py:49:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy, agentic_icu.agents.reasoner.ClinicalReasoner) (import-outside-toplevel)
+tests\test_api.py:50:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult, agentic_icu.domain.contracts.SignalQualityResult) (import-outside-toplevel)
+tests\test_api.py:77:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:84:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:91:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:98:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:109:36: W0612: Unused variable 'adj_lab' (unused-variable)
+tests\test_api.py:126:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:127:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult) (import-outside-toplevel)
+tests\test_api.py:138:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:139:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult) (import-outside-toplevel)
+tests\test_api.py:147:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult) (import-outside-toplevel)
+tests\test_api.py:157:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:158:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:162:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:163:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:167:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:168:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:175:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:176:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:180:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:181:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:185:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:186:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:190:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:191:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy) (import-outside-toplevel)
+tests\test_api.py:198:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:200:8: C0415: Import outside toplevel (agentic_icu.preprocessing.windowing.RuntimePreprocessor) (import-outside-toplevel)
+tests\test_api.py:201:8: C0415: Import outside toplevel (agentic_icu.config.settings) (import-outside-toplevel)
+tests\test_api.py:210:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ObservationRecord) (import-outside-toplevel)
+tests\test_api.py:246:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:247:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ObservationRecord) (import-outside-toplevel)
+tests\test_api.py:255:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ObservationRecord) (import-outside-toplevel)
+tests\test_api.py:269:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ObservationRecord) (import-outside-toplevel)
+tests\test_api.py:280:26: W0212: Access to a protected member _stats of a client class (protected-access)
+tests\test_api.py:282:28: W0212: Access to a protected member _stats of a client class (protected-access)
+tests\test_api.py:286:8: C0415: Import outside toplevel (threading) (import-outside-toplevel)
+tests\test_api.py:287:8: C0415: Import outside toplevel (agentic_icu.preprocessing.windowing.RuntimePreprocessor) (import-outside-toplevel)
+tests\test_api.py:288:8: C0415: Import outside toplevel (agentic_icu.config.settings) (import-outside-toplevel)
+tests\test_api.py:297:19: W0718: Catching too general exception Exception (broad-exception-caught)
+tests\test_api.py:300:26: C0321: More than one statement on a single line (multiple-statements)
+tests\test_api.py:301:26: C0321: More than one statement on a single line (multiple-statements)
+tests\test_api.py:303:29: W0212: Access to a protected member _stats of a client class (protected-access)
+tests\test_api.py:308:8: W0621: Redefining name 'get_workflow' from outer scope (line 17) (redefined-outer-name)
+tests\test_api.py:307:8: C0415: Import outside toplevel (threading) (import-outside-toplevel)
+tests\test_api.py:308:8: W0404: Reimport 'get_workflow' (imported line 17) (reimported)
+tests\test_api.py:308:8: C0415: Import outside toplevel (agentic_icu.api.dependencies.get_workflow) (import-outside-toplevel)
+tests\test_api.py:315:19: W0718: Catching too general exception Exception (broad-exception-caught)
+tests\test_api.py:318:26: C0321: More than one statement on a single line (multiple-statements)
+tests\test_api.py:319:26: C0321: More than one statement on a single line (multiple-statements)
+tests\test_api.py:321:29: W0212: Access to a protected member _model of a client class (protected-access)
+tests\test_api.py:326:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:328:8: C0415: Import outside toplevel (agentic_icu.agents.signal_quality.SignalQualityAgent) (import-outside-toplevel)
+tests\test_api.py:340:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:345:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:352:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:358:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:364:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:370:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:377:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:386:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:393:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:401:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:409:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:422:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:430:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:481:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:484:8: W0621: Redefining name 'get_workflow' from outer scope (line 17) (redefined-outer-name)
+tests\test_api.py:484:8: W0404: Reimport 'get_workflow' (imported line 17) (reimported)
+tests\test_api.py:484:8: C0415: Import outside toplevel (agentic_icu.api.dependencies.get_workflow) (import-outside-toplevel)
+tests\test_api.py:497:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:498:8: W0621: Redefining name 'get_workflow' from outer scope (line 17) (redefined-outer-name)
+tests\test_api.py:498:8: W0404: Reimport 'get_workflow' (imported line 17) (reimported)
+tests\test_api.py:498:8: C0415: Import outside toplevel (agentic_icu.api.dependencies.get_workflow) (import-outside-toplevel)
+tests\test_api.py:515:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:521:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:526:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:531:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:537:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:550:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:554:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:566:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:576:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:594:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:612:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:639:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:697:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy, agentic_icu.agents.reasoner.ClinicalReasoner) (import-outside-toplevel)
+tests\test_api.py:698:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult, agentic_icu.domain.contracts.SignalQualityResult) (import-outside-toplevel)
+tests\test_api.py:712:18: W0612: Unused variable 'logs' (unused-variable)
+tests\test_api.py:718:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy, agentic_icu.agents.reasoner.ClinicalReasoner) (import-outside-toplevel)
+tests\test_api.py:719:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult, agentic_icu.domain.contracts.SignalQualityResult) (import-outside-toplevel)
+tests\test_api.py:733:18: W0612: Unused variable 'logs' (unused-variable)
+tests\test_api.py:740:8: C0415: Import outside toplevel (agentic_icu.agents.reasoner.AlertPolicy, agentic_icu.agents.reasoner.ClinicalReasoner) (import-outside-toplevel)
+tests\test_api.py:741:8: C0415: Import outside toplevel (agentic_icu.domain.contracts.ModelAgentResult, agentic_icu.domain.contracts.SignalQualityResult) (import-outside-toplevel)
+tests\test_api.py:515:0: R0904: Too many public methods (25/20) (too-many-public-methods)
+tests\test_api.py:822:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:828:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:833:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:839:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:844:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:849:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:855:8: C0415: Import outside toplevel (unittest.mock.patch) (import-outside-toplevel)
+tests\test_api.py:866:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:895:8: C0415: Import outside toplevel (agentic_icu.api.main) (import-outside-toplevel)
+tests\test_api.py:896:15: W0212: Access to a protected member _RL_MAX_REQUESTS of a client class (protected-access)
+tests\test_api.py:897:8: W0212: Access to a protected member _RL_MAX_REQUESTS of a client class (protected-access)
+tests\test_api.py:898:8: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:913:12: W0212: Access to a protected member _RL_MAX_REQUESTS of a client class (protected-access)Traceback (most recent call last):
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\reporters\base_reporter.py", line 46, in writeln
+    print(string, file=self.out)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 717-718: character maps to <undefined>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\Agentic-ICU\venv\Scripts\pylint.exe\__main__.py", line 5, in <module>
+    sys.exit(run_pylint())
+             ~~~~~~~~~~^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\__init__.py", line 34, in run_pylint
+    PylintRun(argv or sys.argv[1:])
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\lint\run.py", line 239, in __init__
+    linter.check(args)
+    ~~~~~~~~~~~~^^^^^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\lint\pylinter.py", line 720, in check
+    with self._astroid_module_checker() as check_astroid_module:
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Program Files\Python313\Lib\contextlib.py", line 148, in __exit__
+    next(self.gen)
+    ~~~~^^^^^^^^^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\lint\pylinter.py", line 996, in _astroid_module_checker
+    checker.close()
+    ~~~~~~~~~~~~~^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\checkers\symilar.py", line 857, in close
+    self.add_message("R0801", args=(len(couples), "\n".join(msg)))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\checkers\base_checker.py", line 153, in add_message
+    self.linter.add_message(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        msgid, line, node, args, confidence, col_offset, end_lineno, end_col_offset
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\lint\pylinter.py", line 1310, in add_message
+    self._add_one_message(
+    ~~~~~~~~~~~~~~~~~~~~~^
+        message_definition,
+        ^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        end_col_offset,
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\lint\pylinter.py", line 1268, in _add_one_message
+    self.reporter.handle_message(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        Message(
+        ^^^^^^^^
+    ...<14 lines>...
+        )
+        ^
+    )
+    ^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\reporters\text.py", line 161, in handle_message
+    self.write_message(msg)
+    ~~~~~~~~~~~~~~~~~~^^^^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\reporters\text.py", line 154, in write_message
+    self.writeln(self._fixed_template.format(**self_dict))
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agentic-ICU\venv\Lib\site-packages\pylint\reporters\base_reporter.py", line 48, in writeln
+    print(self.reencode_output_after_unicode_error(string), file=self.out)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 717-718: character maps to <undefined>
+
+tests\test_api.py:914:12: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:918:8: C0415: Import outside toplevel (agentic_icu.api.main) (import-outside-toplevel)
+tests\test_api.py:919:15: W0212: Access to a protected member _RL_MAX_REQUESTS of a client class (protected-access)
+tests\test_api.py:920:8: W0212: Access to a protected member _RL_MAX_REQUESTS of a client class (protected-access)
+tests\test_api.py:921:8: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:934:12: W0212: Access to a protected member _RL_MAX_REQUESTS of a client class (protected-access)
+tests\test_api.py:935:12: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:939:8: C0415: Import outside toplevel (agentic_icu.api.main) (import-outside-toplevel)
+tests\test_api.py:940:8: C0415: Import outside toplevel (time) (import-outside-toplevel)
+tests\test_api.py:941:8: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:948:13: W0212: Access to a protected member _rl_lock of a client class (protected-access)
+tests\test_api.py:949:21: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:952:56: W0212: Access to a protected member _RL_WINDOW_S of a client class (protected-access)
+tests\test_api.py:956:13: W0212: Access to a protected member _rl_lock of a client class (protected-access)
+tests\test_api.py:957:21: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:959:8: W0212: Access to a protected member _rl_counters of a client class (protected-access)
+tests\test_api.py:964:0: C0115: Missing class docstring (missing-class-docstring)
+tests\test_api.py:966:8: C0415: Import outside toplevel (agentic_icu.api.main) (import-outside-toplevel)
+tests\test_api.py:967:21: W0212: Access to a protected member _API_KEY of a client class (protected-access)
+tests\test_api.py:968:8: W0212: Access to a protected member _API_KEY of a client class (protected-access)
+tests\test_api.py:973:8: C0415: Import outside toplevel (agentic_icu.api.main) (import-outside-toplevel)
+tests\test_api.py:974:8: W0212: Access to a protected member _API_KEY of a client class (protected-access)
+tests\test_api.py:976:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:981:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:985:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:989:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:993:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:997:4: C0116: Missing function or method docstring (missing-function-docstring)
+tests\test_api.py:998:8: C0415: Import outside toplevel (agentic_icu.api.main) (import-outside-toplevel)
+tests\test_api.py:999:8: W0212: Access to a protected member _API_KEY of a client class (protected-access)
+tests\test_api.py:1:0: R0801: Similar lines in 2 files
+==agentic_icu.domain.features:[12:46]
+==rebuild_training.kaggle_train_deterioration:[76:110]
+    "HR",
+    "O2Sat",
+    "Temp",
+    "SBP",
+    "MAP",
+    "DBP",
+    "Resp",
+    "EtCO2",
+    "BaseExcess",
+    "HCO3",
+    "FiO2",
+    "pH",
+    "PaCO2",
+    "SaO2",
+    "AST",
+    "BUN",
+    "Alkalinephos",
+    "Calcium",
+    "Chloride",
+    "Creatinine",
+    "Bilirubin_direct",
+    "Glucose",
+    "Lactate",
+    "Magnesium",
+    "Phosphate",
+    "Potassium",
+    "Bilirubin_total",
+    "TroponinI",
+    "Hct",
+    "Hgb",
+    "PTT",
+    "WBC",
+    "Fibrinogen",
+    "Platelets", (duplicate-code)
+tests\test_api.py:1:0: R0801: Similar lines in 2 files
+==rebuild_training.resp_failure_proxy_analysis:[83:112]
+==rebuild_training.resp_failure_threshold_sweep:[27:53]
+    rows = []
+    with path.open("r", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh, delimiter="|")
+        for raw in reader:
+            row: dict = {}
+            for k, v in raw.items():
+                try:
+                    f = float(v)
+                    import math
+                    if math.isfinite(f):
+                        row[k] = f
+                except (TypeError, ValueError):
+                    pass
+            rows.append(row)
+    return rows
+
+
+def carry_forward(rows: list[dict]) -> list[dict]:
+    """Return rows with missing numeric values filled from previous row."""
+    carried: list[dict] = []
+    state: dict = {}
+    for row in rows:
+        state = {**state, **row}
+        carried.append(dict(state))
+    return carried
+
+
+def sustained_flag(raw_flags: list[bool], window: int) -> list[bool]:
+    """True at index i if raw_flags[i-window+1 .. i] are all True.""" (duplicate-code)
+tests\test_api.py:1:0: R0801: Similar lines in 2 files
+==agentic_icu.inference.sequence:[15:44]
+==rebuild_training.kaggle_train_deterioration:[1119:1141]
+class SequenceGRU(nn.Module):
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int = 128,
+        num_layers: int = 2,
+        dropout: float = 0.2,
+        bidirectional: bool = False,
+    ):
+        super().__init__()
+        self.bidirectional = bidirectional
+        self.gru = nn.GRU(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
+            bidirectional=bidirectional,
+        )
+        gru_output_size = hidden_size * 2 if bidirectional else hidden_size
+        self.classifier = nn.Sequential(
+            nn.LayerNorm(gru_output_size),
+            nn.Linear(gru_output_size, gru_output_size // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(gru_output_size // 2, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor: (duplicate-code)
+tests\test_api.py:1:0: R0801: Similar lines in 2 files
+==agentic_icu.api.main:[326:341]
+==test_api:[25:40]
+    with patient_path.open("r", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter="|")
+        for index, row in enumerate(reader):
+            if index >= max_rows:
+                break
+            values = {}
+            for key, value in row.items():
+                if key == "SepsisLabel" or value in (None, ""):
+                    continue
+                try:
+                    numeric_value = float(value)
+                except ValueError:
+                    continue
+                if math.isfinite(numeric_value):
+                    values[key] = numeric_value (duplicate-code)
+tests\test_api.py:1:0: R0801: Similar lines in 2 files
+==agentic_icu.inference.sequence:[109:132]
+==agentic_icu.inference.tabular:[66:88]
+        if self._metrics is None:
+            self.load()
+        return self._metrics or {}
+
+    @property
+    def decision_threshold(self) -> float | None:
+        threshold_payload = self.metrics.get("threshold_selection", {})
+        raw_threshold = threshold_payload.get("threshold")
+        if raw_threshold is None:
+            return None
+        if self._calibrator is not None and self._calibrated_threshold is not None:
+            return self._calibrated_threshold
+        return float(raw_threshold)
+
+    @property
+    def calibrated(self) -> bool:
+        return self._calibrator is not None
+
+    @property
+    def model(self) -> xgb.Booster:
+        if self._model is None:
+            self.load() (duplicate-code)

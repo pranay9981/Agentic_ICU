@@ -1,2 +1,1 @@
 """Clinical agent implementations."""
-

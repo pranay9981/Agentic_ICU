@@ -1,0 +1,51 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-9.0.2, pluggy-1.6.0
+rootdir: D:\Agentic-ICU
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.9, cov-7.1.0
+collected 83 items
+
+tests\test_api.py ...................................................... [ 65%]
+.............................                                            [100%]
+
+============================== warnings summary ===============================
+tests/test_api.py: 11 warnings
+  D:\Agentic-ICU\venv\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator IsotonicRegression from version 1.6.1 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+  https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.9-final-0 _______________
+
+Name                                             Stmts   Miss  Cover
+--------------------------------------------------------------------
+src\agentic_icu\__init__.py                          0      0   100%
+src\agentic_icu\agents\__init__.py                   0      0   100%
+src\agentic_icu\agents\reasoner.py                 194     17    91%
+src\agentic_icu\agents\resp_failure.py              48      8    83%
+src\agentic_icu\agents\signal_quality.py           112      1    99%
+src\agentic_icu\agents\tabular.py                   45      7    84%
+src\agentic_icu\agents\vitals.py                    45      7    84%
+src\agentic_icu\api\__init__.py                      0      0   100%
+src\agentic_icu\api\dependencies.py                 25      0   100%
+src\agentic_icu\api\main.py                        268     50    81%
+src\agentic_icu\config.py                           40      3    92%
+src\agentic_icu\domain\__init__.py                   0      0   100%
+src\agentic_icu\domain\contracts.py                 59      0   100%
+src\agentic_icu\domain\features.py                   4      0   100%
+src\agentic_icu\inference\__init__.py                0      0   100%
+src\agentic_icu\inference\ensemble.py               53      9    83%
+src\agentic_icu\inference\explainer.py              48      2    96%
+src\agentic_icu\inference\sequence.py              117      8    93%
+src\agentic_icu\inference\tabular.py                87     11    87%
+src\agentic_icu\main.py                              7      7     0%
+src\agentic_icu\orchestration\__init__.py            0      0   100%
+src\agentic_icu\orchestration\workflow.py           45      4    91%
+src\agentic_icu\preprocessing\__init__.py            0      0   100%
+src\agentic_icu\preprocessing\windowing.py         153     11    93%
+src\agentic_icu\tools\__init__.py                    0      0   100%
+src\agentic_icu\tools\evaluate_alert_policy.py     166    166     0%
+--------------------------------------------------------------------
+TOTAL                                             1516    311    79%
+====================== 83 passed, 11 warnings in 20.84s =======================

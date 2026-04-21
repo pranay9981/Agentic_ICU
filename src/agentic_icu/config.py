@@ -6,13 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
-
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 @dataclass
 class RuntimeSettings:
-    host: str = os.getenv("AGENTIC_ICU_HOST", "0.0.0.0")
+    host: str = os.getenv("AGENTIC_ICU_HOST", "127.0.0.1")
     port: int = int(os.getenv("AGENTIC_ICU_PORT", "8000"))
     xgboost_model_path: str = os.getenv(
         "AGENTIC_ICU_XGB_MODEL",

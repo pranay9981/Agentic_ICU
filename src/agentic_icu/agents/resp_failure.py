@@ -34,7 +34,9 @@ class RespFailureAgent:
                 status="unavailable",
                 detail="Respiratory failure model artifacts are not available yet.",
             )
-            return result, [AgentLogEntry(agent="Resp Failure Agent", message=result.detail)]
+            return result, [
+                AgentLogEntry(agent="Resp Failure Agent", message=result.detail)
+            ]
 
         sequence_tensor = self.preprocessor.build_sequence_tensor(records)
         score = self.gru_predictor.predict(sequence_tensor)
@@ -62,8 +64,12 @@ class RespFailureAgent:
         try:
             weights = self.gru_predictor.temporal_saliency(sequence_tensor)
             n_steps = len(weights)
-            feature_contributions = {f"t_{i + 1:02d}": float(w) for i, w in enumerate(weights)}
-            top_steps = sorted(range(n_steps), key=lambda i: weights[i], reverse=True)[:3]
+            feature_contributions = {
+                f"t_{i + 1:02d}": float(w) for i, w in enumerate(weights)
+            }
+            top_steps = sorted(range(n_steps), key=lambda i: weights[i], reverse=True)[
+                :3
+            ]
             top_hours = sorted(h + 1 for h in top_steps)
             if len(top_hours) == 1:
                 focus_str = f"hour {top_hours[0]}"
@@ -73,7 +79,11 @@ class RespFailureAgent:
                 focus_str = "hours " + ", ".join(str(h) for h in top_hours)
             explanation = f"Resp model focused on observation {focus_str} of the {n_steps}h window."
         except Exception as exc:
-            logger.warning("RespFailureAgent: saliency computation failed — %s: %s", type(exc).__name__, exc)
+            logger.warning(
+                "RespFailureAgent: saliency computation failed — %s: %s",
+                type(exc).__name__,
+                exc,
+            )
 
         result = ModelAgentResult(
             status="available",
@@ -85,4 +95,6 @@ class RespFailureAgent:
             feature_contributions=feature_contributions,
             explanation=explanation,
         )
-        return result, [AgentLogEntry(agent="Resp Failure Agent", message=result.detail)]
+        return result, [
+            AgentLogEntry(agent="Resp Failure Agent", message=result.detail)
+        ]
