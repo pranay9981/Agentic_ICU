@@ -295,8 +295,11 @@ async def unhandled_error_handler(request: Request, exc: Exception) -> JSONRespo
 _PATIENT_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
+# Keyed per (client IP, path), so the whole live-monitoring board shares one bucket.
+# Cap sized for ~30 patients re-evaluating on their own ~15s cadence (~120 req/min)
+# plus headroom for manual re-evaluates and visibility-triggered catch-up refreshes.
 _RL_WINDOW_S: int = 60
-_RL_MAX_REQUESTS: int = 30
+_RL_MAX_REQUESTS: int = 150
 _rl_lock = threading.Lock()
 _rl_counters: dict[str, deque] = defaultdict(deque)
 
